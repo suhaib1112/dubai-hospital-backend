@@ -11,9 +11,38 @@ app = FastAPI()
 appointments_db = []
 
 doctor_schedule = {
-    "Ahmed": ["09:00 AM", "10:00 AM", "11:00 AM"],
-    "Sara": ["01:00 PM", "02:00 PM", "03:00 PM"]
+    "ahmed": ["09:00 AM", "10:00 AM", "11:00 AM"],
+    "sara": ["01:00 PM", "02:00 PM", "03:00 PM"]
 }
+
+# -------------------------------
+# Utility Functions
+# -------------------------------
+
+def normalize_doctor(name: str):
+    name = name.lower().replace("dr.", "").replace("doctor", "").strip()
+    return name
+
+
+def normalize_time(time_str: str):
+    time_str = time_str.strip().upper()
+
+    # If format like "9 AM"
+    if ":" not in time_str:
+        parts = time_str.split(" ")
+        hour = parts[0]
+        period = parts[1]
+        if len(hour) == 1:
+            hour = "0" + hour
+        return f"{hour}:00 {period}"
+
+    # If format like "9:00 AM"
+    hour_min, period = time_str.split(" ")
+    hour, minute = hour_min.split(":")
+    if len(hour) == 1:
+        hour = "0" + hour
+    return f"{hour}:{minute} {period}"
+
 
 # -------------------------------
 # Models
@@ -51,13 +80,13 @@ def root():
 @app.post("/check-doctor-availability")
 def check_doctor_availability(request: AvailabilityRequest):
 
-    doctor = request.doctor_name
+    doctor = normalize_doctor(request.doctor_name)
     date = request.preferred_date
 
     if doctor not in doctor_schedule:
         return {
             "success": False,
-            "message": f"Dr. {doctor} not found",
+            "message": f"Dr. {doctor.title()} not found",
             "data": None
         }
 
@@ -74,9 +103,9 @@ def check_doctor_availability(request: AvailabilityRequest):
 
     return {
         "success": True,
-        "message": f"Available slots for Dr. {doctor} on {date}",
+        "message": f"Available slots for Dr. {doctor.title()} on {date}",
         "data": {
-            "doctor": doctor,
+            "doctor": doctor.title(),
             "date": date,
             "available_slots": available_slots
         }
@@ -86,14 +115,17 @@ def check_doctor_availability(request: AvailabilityRequest):
 @app.post("/book-appointment")
 def book_appointment(appointment: Appointment):
 
-    if appointment.doctor_name not in doctor_schedule:
+    doctor = normalize_doctor(appointment.doctor_name)
+    time = normalize_time(appointment.time)
+
+    if doctor not in doctor_schedule:
         return {
             "success": False,
             "message": "Doctor not found",
             "data": None
         }
 
-    if appointment.time not in doctor_schedule[appointment.doctor_name]:
+    if time not in doctor_schedule[doctor]:
         return {
             "success": False,
             "message": "Invalid time slot",
@@ -102,9 +134,9 @@ def book_appointment(appointment: Appointment):
 
     for appt in appointments_db:
         if (
-            appt["doctor_name"] == appointment.doctor_name
+            appt["doctor_name"] == doctor
             and appt["date"] == appointment.date
-            and appt["time"] == appointment.time
+            and appt["time"] == time
         ):
             return {
                 "success": False,
@@ -112,26 +144,24 @@ def book_appointment(appointment: Appointment):
                 "data": None
             }
 
-    # Generate clean uppercase appointment ID
     appointment_id = "APT-" + str(uuid.uuid4())[:8].upper()
 
     new_appointment = {
         "appointment_id": appointment_id,
         "patient_name": appointment.patient_name,
-        "doctor_name": appointment.doctor_name,
+        "doctor_name": doctor,
         "date": appointment.date,
-        "time": appointment.time
+        "time": time
     }
 
     appointments_db.append(new_appointment)
 
-    # 👇 Voice-ready natural message
     return {
         "success": True,
         "message": (
             f"Great news {appointment.patient_name}! "
-            f"Your appointment with Dr. {appointment.doctor_name} "
-            f"is confirmed for {appointment.date} at {appointment.time}. "
+            f"Your appointment with Dr. {doctor.title()} "
+            f"is confirmed for {appointment.date} at {time}. "
             f"Your confirmation ID is {appointment_id}. "
             f"Please keep this ID for future reference."
         ),
