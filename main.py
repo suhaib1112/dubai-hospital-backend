@@ -4,10 +4,6 @@ import uuid
 
 app = FastAPI()
 
-# -------------------------------
-# Fake In-Memory Database
-# -------------------------------
-
 appointments_db = []
 
 doctor_schedule = {
@@ -15,23 +11,16 @@ doctor_schedule = {
     "sara": ["01:00 PM", "02:00 PM", "03:00 PM"]
 }
 
-# -------------------------------
-# Utility Functions
-# -------------------------------
-
 def normalize_doctor(name: str):
-    name = name.lower()
-    name = name.replace("dr.", "")
-    name = name.replace("dr ", "")
-    name = name.replace("doctor", "")
-    name = name.strip()
-    return name
-
+    name = name.lower().strip()
+    for prefix in ["dr.", "dr ", "doctor "]:
+        if name.startswith(prefix):
+            name = name.replace(prefix, "")
+    return name.strip()
 
 def normalize_time(time_str: str):
     time_str = time_str.strip().upper()
 
-    # Convert "9 AM" → "09:00 AM"
     if ":" not in time_str:
         parts = time_str.split(" ")
         hour = parts[0]
@@ -40,17 +29,11 @@ def normalize_time(time_str: str):
             hour = "0" + hour
         return f"{hour}:00 {period}"
 
-    # Convert "9:00 AM" → "09:00 AM"
     hour_min, period = time_str.split(" ")
     hour, minute = hour_min.split(":")
     if len(hour) == 1:
         hour = "0" + hour
     return f"{hour}:{minute} {period}"
-
-
-# -------------------------------
-# Models
-# -------------------------------
 
 class Appointment(BaseModel):
     patient_name: str
@@ -58,28 +41,17 @@ class Appointment(BaseModel):
     date: str
     time: str
 
-
 class AvailabilityRequest(BaseModel):
     department: str
     doctor_name: str
     preferred_date: str
 
-
 class CancelRequest(BaseModel):
     appointment_id: str
 
-
-# -------------------------------
-# Routes
-# -------------------------------
-
 @app.get("/")
 def root():
-    return {
-        "success": True,
-        "message": "Dubai Hospital Backend is running"
-    }
-
+    return {"success": True, "message": "Dubai Hospital Backend is running"}
 
 @app.post("/check-doctor-availability")
 def check_doctor_availability(request: AvailabilityRequest):
@@ -90,7 +62,7 @@ def check_doctor_availability(request: AvailabilityRequest):
     if doctor not in doctor_schedule:
         return {
             "success": False,
-            "message": f"Dr. {doctor.title()} not found",
+            "message": "Doctor not found",
             "data": None
         }
 
@@ -115,7 +87,6 @@ def check_doctor_availability(request: AvailabilityRequest):
         }
     }
 
-
 @app.post("/book-appointment")
 def book_appointment(appointment: Appointment):
 
@@ -123,18 +94,10 @@ def book_appointment(appointment: Appointment):
     time = normalize_time(appointment.time)
 
     if doctor not in doctor_schedule:
-        return {
-            "success": False,
-            "message": "Doctor not found",
-            "data": None
-        }
+        return {"success": False, "message": "Doctor not found", "data": None}
 
     if time not in doctor_schedule[doctor]:
-        return {
-            "success": False,
-            "message": "Invalid time slot",
-            "data": None
-        }
+        return {"success": False, "message": "Invalid time slot", "data": None}
 
     for appt in appointments_db:
         if (
@@ -162,16 +125,9 @@ def book_appointment(appointment: Appointment):
 
     return {
         "success": True,
-        "message": (
-            f"Great news {appointment.patient_name}! "
-            f"Your appointment with Dr. {doctor.title()} "
-            f"is confirmed for {appointment.date} at {time}. "
-            f"Your confirmation ID is {appointment_id}. "
-            f"Please keep this ID for future reference."
-        ),
+        "message": f"Great news {appointment.patient_name}! Your appointment with Dr. {doctor.title()} is confirmed for {appointment.date} at {time}. Your confirmation ID is {appointment_id}. Please keep this ID for future reference.",
         "data": new_appointment
     }
-
 
 @app.post("/cancel-appointment")
 def cancel_appointment(request: CancelRequest):
@@ -181,15 +137,8 @@ def cancel_appointment(request: CancelRequest):
             appointments_db.remove(appt)
             return {
                 "success": True,
-                "message": (
-                    f"Your appointment with ID {request.appointment_id} "
-                    f"has been successfully cancelled."
-                ),
+                "message": f"Your appointment with ID {request.appointment_id} has been successfully cancelled.",
                 "data": appt
             }
 
-    return {
-        "success": False,
-        "message": "Appointment ID not found",
-        "data": None
-    }
+    return {"success": False, "message": "Appointment ID not found", "data": None}
