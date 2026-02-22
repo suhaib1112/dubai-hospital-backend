@@ -20,14 +20,18 @@ doctor_schedule = {
 # -------------------------------
 
 def normalize_doctor(name: str):
-    name = name.lower().replace("dr.", "").replace("doctor", "").strip()
+    name = name.lower()
+    name = name.replace("dr.", "")
+    name = name.replace("dr ", "")
+    name = name.replace("doctor", "")
+    name = name.strip()
     return name
 
 
 def normalize_time(time_str: str):
     time_str = time_str.strip().upper()
 
-    # If format like "9 AM"
+    # Convert "9 AM" → "09:00 AM"
     if ":" not in time_str:
         parts = time_str.split(" ")
         hour = parts[0]
@@ -36,7 +40,7 @@ def normalize_time(time_str: str):
             hour = "0" + hour
         return f"{hour}:00 {period}"
 
-    # If format like "9:00 AM"
+    # Convert "9:00 AM" → "09:00 AM"
     hour_min, period = time_str.split(" ")
     hour, minute = hour_min.split(":")
     if len(hour) == 1:
