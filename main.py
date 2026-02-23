@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 import uuid
+from datetime import datetime
 
 app = FastAPI()
 
@@ -10,6 +11,7 @@ app = FastAPI()
 
 appointments_db = []
 
+# 24-hour format schedule
 doctor_schedule = {
     "ahmed": ["09:00", "10:00", "11:00"],
     "sara": ["13:00", "14:00", "15:00"]
@@ -31,14 +33,13 @@ def normalize_doctor(name: str):
 
     name = name.strip()
 
-    # Fuzzy matching for voice transcription issues
+    # Fuzzy matching (handles voice errors like "doctor ahmad")
     for existing_doctor in doctor_schedule.keys():
         if existing_doctor in name:
             return existing_doctor
 
     return name
 
-from datetime import datetime
 
 def normalize_time(time_str: str):
     if not time_str:
@@ -46,28 +47,26 @@ def normalize_time(time_str: str):
 
     time_str = time_str.strip()
 
-    # If already 24-hour format (e.g., "10:00")
+    # Already 24-hour format (e.g., "10:00")
     try:
         datetime.strptime(time_str, "%H:%M")
         return time_str
     except:
         pass
 
-    # If 12-hour format (e.g., "10:00 AM")
+    # 12-hour format (e.g., "10:00 AM")
     try:
         converted = datetime.strptime(time_str.upper(), "%I:%M %p")
         return converted.strftime("%H:%M")
     except:
         pass
 
-    # If only hour provided (e.g., "10")
+    # Only hour provided (e.g., "10")
     if time_str.isdigit():
         return time_str.zfill(2) + ":00"
 
     return time_str
-    except Exception:
-        # Never crash backend
-        return time_str
+
 
 # -------------------------------
 # Models
@@ -89,6 +88,7 @@ class AvailabilityRequest(BaseModel):
 class CancelRequest(BaseModel):
     appointment_id: str
 
+
 # -------------------------------
 # Routes
 # -------------------------------
@@ -105,7 +105,7 @@ def root():
 def check_doctor_availability(request: AvailabilityRequest):
 
     doctor = normalize_doctor(request.doctor_name)
-    date = request.preferred_date
+    date = request.preferred_date.strip()
 
     if doctor not in doctor_schedule:
         return {
