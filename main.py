@@ -22,12 +22,21 @@ doctor_schedule = {
 def normalize_doctor(name: str):
     if not name:
         return ""
+
     name = name.lower().strip()
+
     for prefix in ["dr.", "dr ", "doctor "]:
         if name.startswith(prefix):
             name = name.replace(prefix, "")
-    return name.strip()
 
+    name = name.strip()
+
+    # Fuzzy matching for voice transcription issues
+    for existing_doctor in doctor_schedule.keys():
+        if existing_doctor in name:
+            return existing_doctor
+
+    return name
 
 def normalize_time(time_str: str):
     try:
