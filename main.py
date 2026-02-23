@@ -33,7 +33,7 @@ def normalize_doctor(name: str):
 
     name = name.strip()
 
-    # Fuzzy matching (handles voice errors like "doctor ahmad")
+    # Fuzzy matching for voice variations
     for existing_doctor in doctor_schedule.keys():
         if existing_doctor in name:
             return existing_doctor
@@ -45,23 +45,30 @@ def normalize_time(time_str: str):
     if not time_str:
         return ""
 
-    time_str = time_str.strip()
+    time_str = time_str.strip().upper()
 
-    # Already 24-hour format (e.g., "10:00")
+    # Handle "10 AM"
+    try:
+        converted = datetime.strptime(time_str, "%I %p")
+        return converted.strftime("%H:00")
+    except:
+        pass
+
+    # Handle "10:00 AM"
+    try:
+        converted = datetime.strptime(time_str, "%I:%M %p")
+        return converted.strftime("%H:%M")
+    except:
+        pass
+
+    # Already 24-hour format "10:00"
     try:
         datetime.strptime(time_str, "%H:%M")
         return time_str
     except:
         pass
 
-    # 12-hour format (e.g., "10:00 AM")
-    try:
-        converted = datetime.strptime(time_str.upper(), "%I:%M %p")
-        return converted.strftime("%H:%M")
-    except:
-        pass
-
-    # Only hour provided (e.g., "10")
+    # Only hour provided "10"
     if time_str.isdigit():
         return time_str.zfill(2) + ":00"
 
