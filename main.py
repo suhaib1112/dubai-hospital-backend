@@ -11,8 +11,8 @@ app = FastAPI()
 appointments_db = []
 
 doctor_schedule = {
-    "ahmed": ["09:00 AM", "10:00 AM", "11:00 AM"],
-    "sara": ["01:00 PM", "02:00 PM", "03:00 PM"]
+    "ahmed": ["09:00", "10:00", "11:00"],
+    "sara": ["13:00", "14:00", "15:00"]
 }
 
 # -------------------------------
@@ -38,40 +38,33 @@ def normalize_doctor(name: str):
 
     return name
 
+from datetime import datetime
+
 def normalize_time(time_str: str):
+    if not time_str:
+        return ""
+
+    time_str = time_str.strip()
+
+    # If already 24-hour format (e.g., "10:00")
     try:
-        if not time_str:
-            return ""
-
-        time_str = time_str.strip().upper()
-
-        # Handle "10AM"
-        time_str = time_str.replace("AM", " AM").replace("PM", " PM")
-
-        parts = time_str.split()
-
-        # Case 1: Only hour provided ("10")
-        if len(parts) == 1:
-            hour = parts[0]
-            if hour.isdigit():
-                hour = hour.zfill(2)
-                return f"{hour}:00 AM"
-            return time_str
-
-        # Case 2: Hour + period
-        if len(parts) >= 2:
-            hour_part = parts[0]
-            period = parts[1]
-
-            if ":" not in hour_part:
-                if hour_part.isdigit():
-                    hour_part = hour_part.zfill(2)
-                    hour_part = f"{hour_part}:00"
-
-            return f"{hour_part} {period}"
-
+        datetime.strptime(time_str, "%H:%M")
         return time_str
+    except:
+        pass
 
+    # If 12-hour format (e.g., "10:00 AM")
+    try:
+        converted = datetime.strptime(time_str.upper(), "%I:%M %p")
+        return converted.strftime("%H:%M")
+    except:
+        pass
+
+    # If only hour provided (e.g., "10")
+    if time_str.isdigit():
+        return time_str.zfill(2) + ":00"
+
+    return time_str
     except Exception:
         # Never crash backend
         return time_str
