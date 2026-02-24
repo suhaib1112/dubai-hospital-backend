@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import uuid
 from datetime import datetime
@@ -6,6 +8,7 @@ import pytz
 import requests
 
 app = FastAPI()
+templates = Jinja2Templates(directory="templates")
 
 # -------------------------------
 # In-Memory Database
@@ -32,8 +35,6 @@ def normalize_doctor(name: str):
     for prefix in ["dr.", "dr ", "doctor "]:
         if name.startswith(prefix):
             name = name.replace(prefix, "")
-
-    name = name.strip()
 
     for existing in doctor_schedule.keys():
         if existing in name:
@@ -130,7 +131,7 @@ def check_doctor_availability(request: AvailabilityRequest):
     booked = [
         appt["time"]
         for appt in appointments_db
-        if appt["doctor_name"] == doctor and appt["date"] == date
+        if appt["doctor_name"].lower() == doctor and appt["date"] == date
     ]
 
     available = [
@@ -164,9 +165,9 @@ def book_appointment(appointment: Appointment):
 
     for appt in appointments_db:
         if (
-            appt["doctor_name"] == doctor
-            and appt["date"] == date
-            and appt["time"] == time
+            appt["doctor_name"].lower() == doctor and
+            appt["date"] == date and
+            appt["time"] == time
         ):
             return {
                 "success": False,
@@ -186,9 +187,7 @@ def book_appointment(appointment: Appointment):
 
     appointments_db.append(new_appt)
 
-    # -------------------------------
     # Send booking data to Make webhook
-    # -------------------------------
     try:
         requests.post(
             "https://hook.us2.make.com/dbox8aiyjv3ip5gup7vrbac6dmi9jfzg",
@@ -220,3 +219,18 @@ def cancel_appointment(request: CancelRequest):
             }
 
     return {"success": False, "message": "Appointment ID not found", "data": None}
+
+
+# -------------------------------
+# Admin Dashboard
+# -------------------------------
+
+@app.get("/admin", response_class=HTMLResponse)
+def admin_dashboard(request: Request):
+    return templates.TemplateResponse(
+        "admin.html",
+        {
+            "request": request,
+            "appointments": appointments_db
+        }
+    )
