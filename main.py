@@ -3,6 +3,7 @@ from pydantic import BaseModel
 import uuid
 from datetime import datetime
 import pytz
+import requests
 
 app = FastAPI()
 
@@ -178,12 +179,24 @@ def book_appointment(appointment: Appointment):
     new_appt = {
         "appointment_id": appointment_id,
         "patient_name": appointment.patient_name.strip(),
-        "doctor_name": doctor,
+        "doctor_name": doctor.title(),
         "date": date,
         "time": time
     }
 
     appointments_db.append(new_appt)
+
+    # -------------------------------
+    # Send booking data to Make webhook
+    # -------------------------------
+    try:
+        requests.post(
+            "https://hook.us2.make.com/dbox8aiyjv3ip5gup7vrbac6dmi9jfzg",
+            json=new_appt,
+            timeout=5
+        )
+    except:
+        pass
 
     return {
         "success": True,
@@ -207,4 +220,3 @@ def cancel_appointment(request: CancelRequest):
             }
 
     return {"success": False, "message": "Appointment ID not found", "data": None}
-# redeploy trigger
