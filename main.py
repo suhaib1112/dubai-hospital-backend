@@ -88,6 +88,28 @@ def get_current_datetime():
 @app.post("/book-appointment")
 def book_appointment(appointment: Appointment):
 
+    # 🔎 Check if slot already booked
+    cur.execute("""
+        SELECT * FROM appointments
+        WHERE doctor_name = %s
+        AND date = %s
+        AND time = %s
+        AND status = 'Confirmed'
+    """, (
+        appointment.doctor_name.strip(),
+        appointment.date.strip(),
+        appointment.time.strip()
+    ))
+
+    existing = cur.fetchone()
+
+    if existing:
+        return {
+            "success": False,
+            "message": f"Sorry, Dr. {appointment.doctor_name} is already booked on {appointment.date} at {appointment.time}. Please choose a different time."
+        }
+
+    # ✅ Create booking if slot is free
     appointment_id = "DH" + str(uuid.uuid4())[:5].upper()
 
     cur.execute("""
@@ -119,7 +141,6 @@ def book_appointment(appointment: Appointment):
         "status": "Confirmed"
     }
 
-    # Send to Make webhook
     try:
         requests.post(
             "https://hook.us2.make.com/dbox8aiyjv3ip5gup7vrbac6dmi9jfzg",
