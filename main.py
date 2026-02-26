@@ -24,7 +24,7 @@ cur = conn.cursor()
 # Force recreate correct structure (one time reset)
 
 cur.execute("""
-CREATE TABLE appointments (
+CREATE TABLE IF NOT EXISTS appointments (
     appointment_id VARCHAR(20) PRIMARY KEY,
     patient_name VARCHAR(100),
     email VARCHAR(150),
