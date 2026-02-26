@@ -1,13 +1,13 @@
+import os
+import uuid
+import pytz
+import requests
+import psycopg2
+from datetime import datetime
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-import uuid
-from datetime import datetime
-import pytz
-import requests
-import os
-import psycopg2
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -16,7 +16,8 @@ templates = Jinja2Templates(directory="templates")
 # DATABASE CONNECTION
 # -------------------------------
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
 conn = psycopg2.connect(DATABASE_URL)
 cur = conn.cursor()
 
@@ -46,8 +47,10 @@ class Appointment(BaseModel):
     date: str
     time: str
 
+
 class CancelRequest(BaseModel):
     appointment_id: str
+
 
 # -------------------------------
 # ROOT
@@ -56,6 +59,7 @@ class CancelRequest(BaseModel):
 @app.get("/")
 def root():
     return {"success": True, "message": "Dubai Hospital Backend Running"}
+
 
 # -------------------------------
 # CURRENT DATE & TIME
@@ -73,6 +77,7 @@ def get_current_datetime():
         "day": now.strftime("%A")
     }
 
+
 # -------------------------------
 # BOOK APPOINTMENT
 # -------------------------------
@@ -82,23 +87,22 @@ def book_appointment(appointment: Appointment):
 
     appointment_id = "DH" + str(uuid.uuid4())[:5].upper()
 
-    cur.execute(
-        """
+    cur.execute("""
         INSERT INTO appointments
         (appointment_id, patient_name, email, phone, doctor_name, date, time, status)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """,
-        (
-            appointment_id,
-            appointment.patient_name.strip(),
-            appointment.email.strip(),
-            appointment.phone.strip(),
-            appointment.doctor_name.strip(),
-            appointment.date.strip(),
-            appointment.time.strip(),
-            "Confirmed"
-        )
-    )
+    """,
+    (
+        appointment_id,
+        appointment.patient_name.strip(),
+        appointment.email.strip(),
+        appointment.phone.strip(),
+        appointment.doctor_name.strip(),
+        appointment.date.strip(),
+        appointment.time.strip(),
+        "Confirmed"
+    ))
+
     conn.commit()
 
     new_appt = {
@@ -124,9 +128,10 @@ def book_appointment(appointment: Appointment):
 
     return {
         "success": True,
-        "message": f"Your appointment is confirmed. Your ID is {appointment_id}.",
+        "message": f"Your appointment with Dr. {appointment.doctor_name} on {appointment.date} at {appointment.time} is confirmed. Your appointment ID is {appointment_id}.",
         "data": new_appt
     }
+
 
 # -------------------------------
 # CANCEL APPOINTMENT
@@ -135,15 +140,13 @@ def book_appointment(appointment: Appointment):
 @app.post("/cancel-appointment")
 def cancel_appointment(request: CancelRequest):
 
-    cur.execute(
-        """
+    cur.execute("""
         UPDATE appointments
         SET status = 'Cancelled'
         WHERE appointment_id = %s
         RETURNING *
-        """,
-        (request.appointment_id.strip().upper(),)
-    )
+    """, (request.appointment_id.strip().upper(),))
+
     updated = cur.fetchone()
     conn.commit()
 
@@ -154,6 +157,7 @@ def cancel_appointment(request: CancelRequest):
         }
 
     return {"success": False, "message": "Appointment ID not found"}
+
 
 # -------------------------------
 # ADMIN DASHBOARD
@@ -166,6 +170,7 @@ def admin_dashboard(request: Request):
     rows = cur.fetchall()
 
     appointments = []
+
     for row in rows:
         appointments.append({
             "appointment_id": row[0],
