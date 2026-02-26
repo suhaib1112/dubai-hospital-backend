@@ -22,7 +22,6 @@ conn = psycopg2.connect(DATABASE_URL)
 cur = conn.cursor()
 
 # Force recreate correct structure (one time reset)
-cur.execute("DROP TABLE IF EXISTS appointments;")
 
 cur.execute("""
 CREATE TABLE appointments (
