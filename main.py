@@ -21,23 +21,23 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 conn = psycopg2.connect(DATABASE_URL)
 cur = conn.cursor()
 
-# Create table if not exists
+# Drop old table (development phase only)
+cur.execute("DROP TABLE IF EXISTS appointments;")
+
+# Create upgraded table
 cur.execute("""
 CREATE TABLE IF NOT EXISTS appointments (
     appointment_id VARCHAR(20) PRIMARY KEY,
     patient_name VARCHAR(100),
+    email VARCHAR(150),
+    phone VARCHAR(30),
     doctor_name VARCHAR(50),
     date VARCHAR(20),
-    time VARCHAR(10)
+    time VARCHAR(10),
+    status VARCHAR(20)
 );
 """)
 conn.commit()
-
-# 24-hour schedule
-doctor_schedule = {
-    "ahmed": ["09:00", "10:00", "11:00"],
-    "sara": ["13:00", "14:00", "15:00"]
-}
 
 # -------------------------------
 # MODELS
@@ -45,6 +45,8 @@ doctor_schedule = {
 
 class Appointment(BaseModel):
     patient_name: str
+    email: str
+    phone: str
     doctor_name: str
     date: str
     time: str
@@ -64,22 +66,46 @@ def root():
 
 
 # -------------------------------
+# CURRENT DATE & TIME
+# -------------------------------
+
+@app.get("/get-current-datetime")
+def get_current_datetime():
+    dubai = pytz.timezone("Asia/Dubai")
+    now = datetime.now(dubai)
+
+    return {
+        "success": True,
+        "date": now.strftime("%d/%m/%Y"),
+        "time": now.strftime("%H:%M"),
+        "day": now.strftime("%A")
+    }
+
+
+# -------------------------------
 # BOOK APPOINTMENT
 # -------------------------------
 
 @app.post("/book-appointment")
 def book_appointment(appointment: Appointment):
 
-    appointment_id = "APT" + str(uuid.uuid4())[:6].upper()
+    appointment_id = "DH" + str(uuid.uuid4())[:5].upper()
 
     cur.execute(
-        "INSERT INTO appointments VALUES (%s, %s, %s, %s, %s)",
+        """
+        INSERT INTO appointments
+        (appointment_id, patient_name, email, phone, doctor_name, date, time, status)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """,
         (
             appointment_id,
             appointment.patient_name.strip(),
+            appointment.email.strip(),
+            appointment.phone.strip(),
             appointment.doctor_name.strip(),
             appointment.date.strip(),
             appointment.time.strip(),
+            "Confirmed"
         )
     )
     conn.commit()
@@ -87,12 +113,15 @@ def book_appointment(appointment: Appointment):
     new_appt = {
         "appointment_id": appointment_id,
         "patient_name": appointment.patient_name,
+        "email": appointment.email,
+        "phone": appointment.phone,
         "doctor_name": appointment.doctor_name,
         "date": appointment.date,
-        "time": appointment.time
+        "time": appointment.time,
+        "status": "Confirmed"
     }
 
-    # Send to Make
+    # Send to Make webhook
     try:
         requests.post(
             "https://hook.us2.make.com/dbox8aiyjv3ip5gup7vrbac6dmi9jfzg",
@@ -117,16 +146,21 @@ def book_appointment(appointment: Appointment):
 def cancel_appointment(request: CancelRequest):
 
     cur.execute(
-        "DELETE FROM appointments WHERE appointment_id = %s RETURNING *",
+        """
+        UPDATE appointments
+        SET status = 'Cancelled'
+        WHERE appointment_id = %s
+        RETURNING *
+        """,
         (request.appointment_id.strip().upper(),)
     )
-    deleted = cur.fetchone()
+    updated = cur.fetchone()
     conn.commit()
 
-    if deleted:
+    if updated:
         return {
             "success": True,
-            "message": f"Appointment {request.appointment_id} cancelled successfully."
+            "message": f"Appointment {request.appointment_id} has been cancelled."
         }
 
     return {"success": False, "message": "Appointment ID not found"}
@@ -147,9 +181,12 @@ def admin_dashboard(request: Request):
         appointments.append({
             "appointment_id": row[0],
             "patient_name": row[1],
-            "doctor_name": row[2],
-            "date": row[3],
-            "time": row[4],
+            "email": row[2],
+            "phone": row[3],
+            "doctor_name": row[4],
+            "date": row[5],
+            "time": row[6],
+            "status": row[7]
         })
 
     return templates.TemplateResponse(
