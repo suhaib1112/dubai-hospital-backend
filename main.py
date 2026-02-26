@@ -21,8 +21,11 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 conn = psycopg2.connect(DATABASE_URL)
 cur = conn.cursor()
 
+# Force recreate correct structure (one time reset)
+cur.execute("DROP TABLE IF EXISTS appointments;")
+
 cur.execute("""
-CREATE TABLE IF NOT EXISTS appointments (
+CREATE TABLE appointments (
     appointment_id VARCHAR(20) PRIMARY KEY,
     patient_name VARCHAR(100),
     email VARCHAR(150),
@@ -33,6 +36,7 @@ CREATE TABLE IF NOT EXISTS appointments (
     status VARCHAR(20)
 );
 """)
+
 conn.commit()
 
 # -------------------------------
