@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Dubai Hospital Admin Dashboard</title>
+    <title>Dubai Hospital Admin</title>
     <style>
         body {
-            font-family: Arial;
-            background: #f4f6f9;
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
             padding: 40px;
         }
 
         h1 {
             text-align: center;
+            margin-bottom: 40px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             background: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         th, td {
@@ -34,32 +34,52 @@
         tr:hover {
             background-color: #f1f1f1;
         }
+
+        .confirmed {
+            color: green;
+            font-weight: bold;
+        }
+
+        .cancelled {
+            color: red;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
 
-<h1>Dubai Hospital Appointments</h1>
+    <h1>Dubai Hospital Appointments</h1>
 
-<table>
-    <tr>
-        <th>Appointment ID</th>
-        <th>Patient Name</th>
-        <th>Doctor</th>
-        <th>Date</th>
-        <th>Time</th>
-    </tr>
-
-    {% for appt in appointments %}
-    <tr>
-        <td>{{ appt.appointment_id }}</td>
-        <td>{{ appt.patient_name }}</td>
-        <td>{{ appt.doctor_name }}</td>
-        <td>{{ appt.date }}</td>
-        <td>{{ appt.time }}</td>
-    </tr>
-    {% endfor %}
-
-</table>
+    <table>
+        <thead>
+            <tr>
+                <th>Appointment ID</th>
+                <th>Patient Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Doctor</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for appt in appointments %}
+            <tr>
+                <td>{{ appt.appointment_id }}</td>
+                <td>{{ appt.patient_name }}</td>
+                <td>{{ appt.email }}</td>
+                <td>{{ appt.phone }}</td>
+                <td>{{ appt.doctor_name }}</td>
+                <td>{{ appt.date }}</td>
+                <td>{{ appt.time }}</td>
+                <td class="{% if appt.status == 'Cancelled' %}cancelled{% else %}confirmed{% endif %}">
+                    {{ appt.status }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
 </body>
 </html>
