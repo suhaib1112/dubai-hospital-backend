@@ -21,8 +21,7 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 conn = psycopg2.connect(DATABASE_URL)
 cur = conn.cursor()
 
-# Force recreate correct structure (one time reset)
-
+# Create table safely (production mode)
 cur.execute("""
 CREATE TABLE IF NOT EXISTS appointments (
     appointment_id VARCHAR(20) PRIMARY KEY,
@@ -53,6 +52,12 @@ class Appointment(BaseModel):
 
 class CancelRequest(BaseModel):
     appointment_id: str
+
+
+class RescheduleRequest(BaseModel):
+    appointment_id: str
+    new_date: str
+    new_time: str
 
 
 # -------------------------------
@@ -88,7 +93,7 @@ def get_current_datetime():
 @app.post("/book-appointment")
 def book_appointment(appointment: Appointment):
 
-    # 🔎 Check if slot already booked
+    # 🔎 Prevent double booking
     cur.execute("""
         SELECT * FROM appointments
         WHERE doctor_name = %s
@@ -109,7 +114,7 @@ def book_appointment(appointment: Appointment):
             "message": f"Sorry, Dr. {appointment.doctor_name} is already booked on {appointment.date} at {appointment.time}. Please choose a different time."
         }
 
-    # ✅ Create booking if slot is free
+    # ✅ Create appointment
     appointment_id = "DH" + str(uuid.uuid4())[:5].upper()
 
     cur.execute("""
@@ -141,6 +146,7 @@ def book_appointment(appointment: Appointment):
         "status": "Confirmed"
     }
 
+    # Send to Make webhook
     try:
         requests.post(
             "https://hook.us2.make.com/dbox8aiyjv3ip5gup7vrbac6dmi9jfzg",
@@ -164,12 +170,14 @@ def book_appointment(appointment: Appointment):
 @app.post("/cancel-appointment")
 def cancel_appointment(request: CancelRequest):
 
+    appointment_id = request.appointment_id.strip().upper()
+
     cur.execute("""
         UPDATE appointments
         SET status = 'Cancelled'
         WHERE appointment_id = %s
         RETURNING *
-    """, (request.appointment_id.strip().upper(),))
+    """, (appointment_id,))
 
     updated = cur.fetchone()
     conn.commit()
@@ -177,10 +185,80 @@ def cancel_appointment(request: CancelRequest):
     if updated:
         return {
             "success": True,
-            "message": f"Appointment {request.appointment_id} has been cancelled."
+            "message": f"Appointment {appointment_id} has been cancelled."
         }
 
     return {"success": False, "message": "Appointment ID not found"}
+
+
+# -------------------------------
+# RESCHEDULE APPOINTMENT
+# -------------------------------
+
+@app.post("/reschedule-appointment")
+def reschedule_appointment(request: RescheduleRequest):
+
+    appointment_id = request.appointment_id.strip().upper()
+    new_date = request.new_date.strip()
+    new_time = request.new_time.strip()
+
+    # Check if appointment exists
+    cur.execute("""
+        SELECT doctor_name FROM appointments
+        WHERE appointment_id = %s
+        AND status = 'Confirmed'
+    """, (appointment_id,))
+
+    existing = cur.fetchone()
+
+    if not existing:
+        return {
+            "success": False,
+            "message": "Appointment ID not found or already cancelled."
+        }
+
+    doctor_name = existing[0]
+
+    # Prevent double booking on reschedule
+    cur.execute("""
+        SELECT * FROM appointments
+        WHERE doctor_name = %s
+        AND date = %s
+        AND time = %s
+        AND status = 'Confirmed'
+        AND appointment_id != %s
+    """, (
+        doctor_name,
+        new_date,
+        new_time,
+        appointment_id
+    ))
+
+    slot_taken = cur.fetchone()
+
+    if slot_taken:
+        return {
+            "success": False,
+            "message": f"Sorry, Dr. {doctor_name} is already booked on {new_date} at {new_time}. Please choose another time."
+        }
+
+    # Update appointment
+    cur.execute("""
+        UPDATE appointments
+        SET date = %s, time = %s
+        WHERE appointment_id = %s
+    """, (
+        new_date,
+        new_time,
+        appointment_id
+    ))
+
+    conn.commit()
+
+    return {
+        "success": True,
+        "message": f"Your appointment has been successfully rescheduled to {new_date} at {new_time}. Your appointment ID remains {appointment_id}."
+    }
 
 
 # -------------------------------
