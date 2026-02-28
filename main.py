@@ -75,7 +75,7 @@ def send_confirmation_email(to_email, patient_name, doctor, date, time, appointm
     msg.attach(MIMEText(html, "html"))
 
     try:
-        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
         server.starttls()
         server.login(EMAIL_USER, EMAIL_PASS)
         server.sendmail(EMAIL_USER, to_email, msg.as_string())
