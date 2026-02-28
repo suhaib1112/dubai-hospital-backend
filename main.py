@@ -81,7 +81,7 @@ def send_confirmation_email(to_email, patient_name, doctor, date, time, appointm
         server.sendmail(EMAIL_USER, to_email, msg.as_string())
         server.quit()
     except Exception as e:
-        print("Email error:", e)
+        print("EMAIL ERROR:", str(e))
 
 # -------------------------------
 # MODELS
