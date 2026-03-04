@@ -4,6 +4,7 @@ import pytz
 import psycopg2
 import smtplib
 import threading
+
 from datetime import datetime
 from email.mime.text import MIMEText
 
@@ -13,74 +14,82 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 
-# -------------------------------
+# -----------------------------
 # APP INITIALIZATION
-# -------------------------------
+# -----------------------------
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 
-# -------------------------------
-# DATABASE CONNECTION
-# -------------------------------
+# -----------------------------
+# DATABASE CONNECTION FUNCTION
+# -----------------------------
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
-conn = psycopg2.connect(DATABASE_URL)
-cur = conn.cursor()
+def get_db():
+    conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+    cur = conn.cursor()
+    return conn, cur
 
 
-# -------------------------------
+# -----------------------------
 # CREATE TABLES
-# -------------------------------
+# -----------------------------
 
-cur.execute("""
-CREATE TABLE IF NOT EXISTS appointments (
-appointment_id VARCHAR(20) PRIMARY KEY,
-patient_name VARCHAR(100),
-email VARCHAR(150),
-phone VARCHAR(30),
-doctor_name VARCHAR(50),
-date VARCHAR(20),
-time VARCHAR(10),
-status VARCHAR(20)
-);
-""")
+def create_tables():
 
-cur.execute("""
-CREATE TABLE IF NOT EXISTS leads (
-lead_id VARCHAR(20) PRIMARY KEY,
-business_name VARCHAR(150),
-owner_name VARCHAR(150),
-phone VARCHAR(30),
-interest_level VARCHAR(20),
-notes TEXT,
-created_at TIMESTAMP
-);
-""")
+    conn, cur = get_db()
 
-cur.execute("""
-CREATE TABLE IF NOT EXISTS demos (
-demo_id VARCHAR(20) PRIMARY KEY,
-name VARCHAR(150),
-email VARCHAR(150),
-date VARCHAR(20),
-time VARCHAR(10),
-created_at TIMESTAMP
-);
-""")
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS appointments (
+    appointment_id VARCHAR(20) PRIMARY KEY,
+    patient_name VARCHAR(100),
+    email VARCHAR(150),
+    phone VARCHAR(30),
+    doctor_name VARCHAR(50),
+    date VARCHAR(20),
+    time VARCHAR(10),
+    status VARCHAR(20)
+    );
+    """)
 
-conn.commit()
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS leads (
+    lead_id VARCHAR(20) PRIMARY KEY,
+    business_name VARCHAR(150),
+    owner_name VARCHAR(150),
+    phone VARCHAR(30),
+    interest_level VARCHAR(20),
+    notes TEXT,
+    created_at TIMESTAMP
+    );
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS demos (
+    demo_id VARCHAR(20) PRIMARY KEY,
+    name VARCHAR(150),
+    email VARCHAR(150),
+    date VARCHAR(20),
+    time VARCHAR(10),
+    created_at TIMESTAMP
+    );
+    """)
+
+    conn.commit()
+    conn.close()
+
+create_tables()
 
 
-# -------------------------------
+# -----------------------------
 # EMAIL CONFIG
-# -------------------------------
+# -----------------------------
 
 EMAIL_ADDRESS = os.environ.get("GMAIL_ADDRESS")
 EMAIL_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD")
-
 
 def send_email(to_email, subject, html):
 
@@ -98,9 +107,9 @@ def send_email(to_email, subject, html):
         pass
 
 
-# -------------------------------
+# -----------------------------
 # MODELS
-# -------------------------------
+# -----------------------------
 
 class Appointment(BaseModel):
     patient_name: str
@@ -136,21 +145,21 @@ class Demo(BaseModel):
     time: str
 
 
-# -------------------------------
+# -----------------------------
 # ROOT
-# -------------------------------
+# -----------------------------
 
 @app.get("/")
 def root():
     return {"success": True, "message": "VoxDesk Backend Running"}
 
 
-# -------------------------------
+# -----------------------------
 # CURRENT DATE TIME
-# -------------------------------
+# -----------------------------
 
 @app.get("/get-current-datetime")
-def get_current_datetime():
+def get_datetime():
 
     dubai = pytz.timezone("Asia/Dubai")
     now = datetime.now(dubai)
@@ -163,12 +172,14 @@ def get_current_datetime():
     }
 
 
-# -------------------------------
+# -----------------------------
 # BOOK APPOINTMENT
-# -------------------------------
+# -----------------------------
 
 @app.post("/book-appointment")
 def book_appointment(appointment: Appointment):
+
+    conn, cur = get_db()
 
     cur.execute("""
     SELECT * FROM appointments
@@ -182,9 +193,10 @@ def book_appointment(appointment: Appointment):
     existing = cur.fetchone()
 
     if existing:
+        conn.close()
         return {
             "success": False,
-            "message": f"Dr. {appointment.doctor_name} is already booked at that time."
+            "message": f"Dr. {appointment.doctor_name} is already booked."
         }
 
     appointment_id = "APT" + str(uuid.uuid4())[:6].upper()
@@ -203,6 +215,7 @@ def book_appointment(appointment: Appointment):
     ))
 
     conn.commit()
+    conn.close()
 
     html = f"""
     <h2>Appointment Confirmed</h2>
@@ -214,33 +227,35 @@ def book_appointment(appointment: Appointment):
 
     threading.Thread(
         target=send_email,
-        args=(appointment.email, "Appointment Confirmation", html)
+        args=(appointment.email,"Appointment Confirmation",html)
     ).start()
 
     return {
         "success": True,
-        "message": f"Your appointment is confirmed. Appointment ID is {appointment_id}"
+        "message": f"Appointment confirmed. ID: {appointment_id}"
     }
 
 
-# -------------------------------
+# -----------------------------
 # CANCEL APPOINTMENT
-# -------------------------------
+# -----------------------------
 
 @app.post("/cancel-appointment")
 def cancel_appointment(request: CancelRequest):
 
-    appointment_id = request.appointment_id.upper()
+    conn, cur = get_db()
 
     cur.execute("""
     UPDATE appointments
     SET status='Cancelled'
     WHERE appointment_id=%s
     RETURNING *
-    """,(appointment_id,))
+    """,(request.appointment_id.upper(),))
 
     updated = cur.fetchone()
+
     conn.commit()
+    conn.close()
 
     if updated:
         return {"success": True, "message": "Appointment cancelled"}
@@ -248,16 +263,18 @@ def cancel_appointment(request: CancelRequest):
     return {"success": False, "message": "Appointment not found"}
 
 
-# -------------------------------
-# RESCHEDULE
-# -------------------------------
+# -----------------------------
+# RESCHEDULE APPOINTMENT
+# -----------------------------
 
 @app.post("/reschedule-appointment")
 def reschedule(request: RescheduleRequest):
 
+    conn, cur = get_db()
+
     cur.execute("""
     UPDATE appointments
-    SET date=%s, time=%s
+    SET date=%s,time=%s
     WHERE appointment_id=%s
     RETURNING *
     """,(
@@ -267,7 +284,9 @@ def reschedule(request: RescheduleRequest):
     ))
 
     updated = cur.fetchone()
+
     conn.commit()
+    conn.close()
 
     if updated:
         return {"success": True, "message": "Appointment rescheduled"}
@@ -275,12 +294,14 @@ def reschedule(request: RescheduleRequest):
     return {"success": False, "message": "Appointment not found"}
 
 
-# -------------------------------
-# SAVE LEAD
-# -------------------------------
+# -----------------------------
+# SAVE LEAD (AI COLD CALLER)
+# -----------------------------
 
 @app.post("/save-lead")
 def save_lead(lead: Lead):
+
+    conn, cur = get_db()
 
     lead_id = "LD" + str(uuid.uuid4())[:6].upper()
 
@@ -297,16 +318,19 @@ def save_lead(lead: Lead):
     ))
 
     conn.commit()
+    conn.close()
 
     return {"success": True, "message": "Lead saved"}
 
 
-# -------------------------------
+# -----------------------------
 # BOOK DEMO
-# -------------------------------
+# -----------------------------
 
 @app.post("/book-demo")
 def book_demo(demo: Demo):
+
+    conn, cur = get_db()
 
     demo_id = "DM" + str(uuid.uuid4())[:6].upper()
 
@@ -322,6 +346,7 @@ def book_demo(demo: Demo):
     ))
 
     conn.commit()
+    conn.close()
 
     html = f"""
     <h2>VoxDesk Demo Scheduled</h2>
@@ -331,21 +356,25 @@ def book_demo(demo: Demo):
 
     threading.Thread(
         target=send_email,
-        args=(demo.email, "VoxDesk Demo Confirmation", html)
+        args=(demo.email,"VoxDesk Demo Confirmation",html)
     ).start()
 
     return {"success": True, "message": "Demo booked"}
 
 
-# -------------------------------
-# ADMIN DASHBOARD
-# -------------------------------
+# -----------------------------
+# ADMIN APPOINTMENTS
+# -----------------------------
 
 @app.get("/admin", response_class=HTMLResponse)
-def admin(request: Request):
+def admin_dashboard(request: Request):
+
+    conn, cur = get_db()
 
     cur.execute("SELECT * FROM appointments ORDER BY date,time")
     rows = cur.fetchall()
+
+    conn.close()
 
     appointments = []
 
@@ -367,27 +396,35 @@ def admin(request: Request):
     )
 
 
-# -------------------------------
+# -----------------------------
 # ADMIN LEADS
-# -------------------------------
+# -----------------------------
 
 @app.get("/admin-leads")
 def admin_leads():
 
+    conn, cur = get_db()
+
     cur.execute("SELECT * FROM leads ORDER BY created_at DESC")
     rows = cur.fetchall()
+
+    conn.close()
 
     return {"leads": rows}
 
 
-# -------------------------------
+# -----------------------------
 # ADMIN DEMOS
-# -------------------------------
+# -----------------------------
 
 @app.get("/admin-demos")
 def admin_demos():
 
+    conn, cur = get_db()
+
     cur.execute("SELECT * FROM demos ORDER BY created_at DESC")
     rows = cur.fetchall()
+
+    conn.close()
 
     return {"demos": rows}
