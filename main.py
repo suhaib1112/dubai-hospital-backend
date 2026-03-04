@@ -1,11 +1,10 @@
 import os
 import uuid
 import pytz
-import requests
 import psycopg2
 import smtplib
-from email.mime.text import MIMEText
 from datetime import datetime
+from email.mime.text import MIMEText
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -29,37 +28,37 @@ cur = conn.cursor()
 
 cur.execute("""
 CREATE TABLE IF NOT EXISTS appointments (
-    appointment_id VARCHAR(20) PRIMARY KEY,
-    patient_name VARCHAR(100),
-    email VARCHAR(150),
-    phone VARCHAR(30),
-    doctor_name VARCHAR(50),
-    date VARCHAR(20),
-    time VARCHAR(10),
-    status VARCHAR(20)
+appointment_id VARCHAR(20) PRIMARY KEY,
+patient_name VARCHAR(100),
+email VARCHAR(150),
+phone VARCHAR(30),
+doctor_name VARCHAR(50),
+date VARCHAR(20),
+time VARCHAR(10),
+status VARCHAR(20)
 );
 """)
 
 cur.execute("""
 CREATE TABLE IF NOT EXISTS leads (
-    lead_id VARCHAR(20) PRIMARY KEY,
-    business_name VARCHAR(150),
-    owner_name VARCHAR(150),
-    phone VARCHAR(30),
-    interest_level VARCHAR(20),
-    notes TEXT,
-    created_at TIMESTAMP
+lead_id VARCHAR(20) PRIMARY KEY,
+business_name VARCHAR(150),
+owner_name VARCHAR(150),
+phone VARCHAR(30),
+interest_level VARCHAR(20),
+notes TEXT,
+created_at TIMESTAMP
 );
 """)
 
 cur.execute("""
 CREATE TABLE IF NOT EXISTS demos (
-    demo_id VARCHAR(20) PRIMARY KEY,
-    name VARCHAR(150),
-    email VARCHAR(150),
-    date VARCHAR(20),
-    time VARCHAR(10),
-    created_at TIMESTAMP
+demo_id VARCHAR(20) PRIMARY KEY,
+name VARCHAR(150),
+email VARCHAR(150),
+date VARCHAR(20),
+time VARCHAR(10),
+created_at TIMESTAMP
 );
 """)
 
@@ -72,9 +71,9 @@ conn.commit()
 EMAIL_ADDRESS = os.environ.get("GMAIL_ADDRESS")
 EMAIL_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD")
 
-def send_email(to_email, subject, html_content):
+def send_email(to_email, subject, html):
 
-    msg = MIMEText(html_content, "html")
+    msg = MIMEText(html, "html")
     msg["Subject"] = subject
     msg["From"] = EMAIL_ADDRESS
     msg["To"] = to_email
@@ -139,6 +138,7 @@ def root():
 
 @app.get("/get-current-datetime")
 def get_current_datetime():
+
     dubai = pytz.timezone("Asia/Dubai")
     now = datetime.now(dubai)
 
@@ -157,15 +157,12 @@ def get_current_datetime():
 def book_appointment(appointment: Appointment):
 
     cur.execute("""
-        SELECT * FROM appointments
-        WHERE doctor_name = %s
-        AND date = %s
-        AND time = %s
-        AND status = 'Confirmed'
-    """, (
-        appointment.doctor_name.strip(),
-        appointment.date.strip(),
-        appointment.time.strip()
+    SELECT * FROM appointments
+    WHERE doctor_name=%s AND date=%s AND time=%s AND status='Confirmed'
+    """,(
+        appointment.doctor_name,
+        appointment.date,
+        appointment.time
     ))
 
     existing = cur.fetchone()
@@ -173,15 +170,14 @@ def book_appointment(appointment: Appointment):
     if existing:
         return {
             "success": False,
-            "message": f"Sorry, Dr. {appointment.doctor_name} is already booked on {appointment.date} at {appointment.time}."
+            "message": f"Dr. {appointment.doctor_name} is already booked at that time."
         }
 
-    appointment_id = "DH" + str(uuid.uuid4())[:5].upper()
+    appointment_id = "APT" + str(uuid.uuid4())[:6].upper()
 
     cur.execute("""
-        INSERT INTO appointments
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-    """, (
+    INSERT INTO appointments VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+    """,(
         appointment_id,
         appointment.patient_name,
         appointment.email,
@@ -194,21 +190,19 @@ def book_appointment(appointment: Appointment):
 
     conn.commit()
 
-    # EMAIL CONFIRMATION
     html = f"""
-    <h2>Dubai Hospital Appointment Confirmation</h2>
-    <p>Your appointment has been confirmed.</p>
-    <p><b>Doctor:</b> {appointment.doctor_name}</p>
-    <p><b>Date:</b> {appointment.date}</p>
-    <p><b>Time:</b> {appointment.time}</p>
-    <p><b>Appointment ID:</b> {appointment_id}</p>
+    <h2>Appointment Confirmed</h2>
+    <p>Doctor: {appointment.doctor_name}</p>
+    <p>Date: {appointment.date}</p>
+    <p>Time: {appointment.time}</p>
+    <p>Appointment ID: {appointment_id}</p>
     """
 
-    send_email(appointment.email, "Appointment Confirmation", html)
+    send_email(appointment.email,"Appointment Confirmation",html)
 
     return {
         "success": True,
-        "message": f"Your appointment with Dr. {appointment.doctor_name} on {appointment.date} at {appointment.time} is confirmed. Your appointment ID is {appointment_id}."
+        "message": f"Your appointment is confirmed. Appointment ID is {appointment_id}"
     }
 
 # -------------------------------
@@ -218,59 +212,53 @@ def book_appointment(appointment: Appointment):
 @app.post("/cancel-appointment")
 def cancel_appointment(request: CancelRequest):
 
-    appointment_id = request.appointment_id.strip().upper()
+    appointment_id = request.appointment_id.upper()
 
     cur.execute("""
-        UPDATE appointments
-        SET status = 'Cancelled'
-        WHERE appointment_id = %s
-        RETURNING *
-    """, (appointment_id,))
+    UPDATE appointments
+    SET status='Cancelled'
+    WHERE appointment_id=%s
+    RETURNING *
+    """,(appointment_id,))
 
     updated = cur.fetchone()
+
     conn.commit()
 
     if updated:
-        return {
-            "success": True,
-            "message": f"Appointment {appointment_id} has been cancelled."
-        }
+        return {"success":True,"message":"Appointment cancelled"}
 
-    return {"success": False, "message": "Appointment ID not found"}
+    return {"success":False,"message":"Appointment not found"}
 
 # -------------------------------
 # RESCHEDULE
 # -------------------------------
 
 @app.post("/reschedule-appointment")
-def reschedule_appointment(request: RescheduleRequest):
-
-    appointment_id = request.appointment_id.strip().upper()
+def reschedule(request: RescheduleRequest):
 
     cur.execute("""
-        UPDATE appointments
-        SET date = %s, time = %s
-        WHERE appointment_id = %s
-        RETURNING *
-    """, (
+    UPDATE appointments
+    SET date=%s,time=%s
+    WHERE appointment_id=%s
+    RETURNING *
+    """,(
         request.new_date,
         request.new_time,
-        appointment_id
+        request.appointment_id
     ))
 
     updated = cur.fetchone()
+
     conn.commit()
 
     if updated:
-        return {
-            "success": True,
-            "message": f"Appointment {appointment_id} rescheduled to {request.new_date} at {request.new_time}."
-        }
+        return {"success":True,"message":"Appointment rescheduled"}
 
-    return {"success": False, "message": "Appointment ID not found"}
+    return {"success":False,"message":"Appointment not found"}
 
 # -------------------------------
-# SAVE LEAD (OUTBOUND SALES)
+# SAVE LEAD
 # -------------------------------
 
 @app.post("/save-lead")
@@ -279,9 +267,8 @@ def save_lead(lead: Lead):
     lead_id = "LD" + str(uuid.uuid4())[:6].upper()
 
     cur.execute("""
-        INSERT INTO leads
-        VALUES (%s,%s,%s,%s,%s,%s,%s)
-    """, (
+    INSERT INTO leads VALUES (%s,%s,%s,%s,%s,%s,%s)
+    """,(
         lead_id,
         lead.business_name,
         lead.owner_name,
@@ -293,13 +280,10 @@ def save_lead(lead: Lead):
 
     conn.commit()
 
-    return {
-        "success": True,
-        "message": "Lead saved successfully"
-    }
+    return {"success":True,"message":"Lead saved"}
 
 # -------------------------------
-# BOOK DEMO (OUTBOUND SALES)
+# BOOK DEMO
 # -------------------------------
 
 @app.post("/book-demo")
@@ -308,9 +292,8 @@ def book_demo(demo: Demo):
     demo_id = "DM" + str(uuid.uuid4())[:6].upper()
 
     cur.execute("""
-        INSERT INTO demos
-        VALUES (%s,%s,%s,%s,%s,%s)
-    """, (
+    INSERT INTO demos VALUES (%s,%s,%s,%s,%s,%s)
+    """,(
         demo_id,
         demo.name,
         demo.email,
@@ -321,48 +304,67 @@ def book_demo(demo: Demo):
 
     conn.commit()
 
-    # SEND DEMO EMAIL
-
     html = f"""
     <h2>VoxDesk Demo Scheduled</h2>
-    <p>Your demo has been scheduled.</p>
-    <p><b>Date:</b> {demo.date}</p>
-    <p><b>Time:</b> {demo.time}</p>
-    <p>We look forward to showing you how VoxDesk can automate your calls.</p>
+    <p>Date: {demo.date}</p>
+    <p>Time: {demo.time}</p>
     """
 
-    send_email(demo.email, "VoxDesk Demo Confirmation", html)
+    send_email(demo.email,"VoxDesk Demo Confirmation",html)
 
-    return {
-        "success": True,
-        "message": "Demo booked successfully"
-    }
+    return {"success":True,"message":"Demo booked"}
 
 # -------------------------------
-# ADMIN DASHBOARD
+# ADMIN APPOINTMENTS
 # -------------------------------
 
 @app.get("/admin", response_class=HTMLResponse)
-def admin_dashboard(request: Request):
+def admin(request: Request):
 
     cur.execute("SELECT * FROM appointments ORDER BY date,time")
     rows = cur.fetchall()
 
-    appointments = []
+    appointments=[]
 
-    for row in rows:
+    for r in rows:
         appointments.append({
-            "appointment_id": row[0],
-            "patient_name": row[1],
-            "email": row[2],
-            "phone": row[3],
-            "doctor_name": row[4],
-            "date": row[5],
-            "time": row[6],
-            "status": row[7]
+            "appointment_id":r[0],
+            "patient_name":r[1],
+            "email":r[2],
+            "phone":r[3],
+            "doctor_name":r[4],
+            "date":r[5],
+            "time":r[6],
+            "status":r[7]
         })
 
     return templates.TemplateResponse(
         "admin.html",
-        {"request": request, "appointments": appointments}
+        {"request":request,"appointments":appointments}
     )
+
+# -------------------------------
+# ADMIN LEADS
+# -------------------------------
+
+@app.get("/admin-leads")
+def admin_leads():
+
+    cur.execute("SELECT * FROM leads ORDER BY created_at DESC")
+
+    rows = cur.fetchall()
+
+    return {"leads":rows}
+
+# -------------------------------
+# ADMIN DEMOS
+# -------------------------------
+
+@app.get("/admin-demos")
+def admin_demos():
+
+    cur.execute("SELECT * FROM demos ORDER BY created_at DESC")
+
+    rows = cur.fetchall()
+
+    return {"demos":rows}
