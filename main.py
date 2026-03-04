@@ -198,7 +198,11 @@ def book_appointment(appointment: Appointment):
     <p>Appointment ID: {appointment_id}</p>
     """
 
-    send_email(appointment.email,"Appointment Confirmation",html)
+    import threading
+threading.Thread(
+    target=send_email,
+    args=(appointment.email,"Appointment Confirmation",html)
+).start()
 
     return {
         "success": True,
