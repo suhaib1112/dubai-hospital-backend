@@ -3,16 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VoxDesk Admin</title>
+<title>Appointments Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  /* ===== THEME VARIABLES ===== */
   [data-theme="dark"] {
     --bg: #0c0c10;
     --surface: #13131a;
     --surface2: #1a1a24;
-    --surface3: #20202c;
     --border: #2a2a38;
     --ink: #f0f0f8;
     --ink2: #9090aa;
@@ -25,19 +23,13 @@
     --green-bg: rgba(52,211,153,0.1);
     --red: #f87171;
     --red-bg: rgba(248,113,113,0.1);
-    --amber: #fbbf24;
-    --amber-bg: rgba(251,191,36,0.1);
-    --blue: #60a5fa;
-    --blue-bg: rgba(96,165,250,0.1);
     --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2);
-    --chart-grid: rgba(255,255,255,0.05);
   }
 
   [data-theme="light"] {
     --bg: #f4f3ef;
     --surface: #ffffff;
     --surface2: #f9f8f5;
-    --surface3: #f0efe9;
     --border: #e2e0d8;
     --ink: #1a1916;
     --ink2: #6b6860;
@@ -50,539 +42,171 @@
     --green-bg: #e8f5ee;
     --red: #b83232;
     --red-bg: #faeaea;
-    --amber: #8a6400;
-    --amber-bg: #fef6e0;
-    --blue: #1a4a8a;
-    --blue-bg: #e8eef8;
     --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
-    --chart-grid: rgba(0,0,0,0.06);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: 'Manrope', sans-serif; min-height: 100vh; transition: background 0.3s, color 0.3s; }
 
-  body {
-    background: var(--bg);
-    color: var(--ink);
-    font-family: 'Manrope', sans-serif;
-    min-height: 100vh;
-    transition: background 0.3s ease, color 0.3s ease;
-  }
-
-  /* ===== SIDEBAR ===== */
+  /* SIDEBAR */
   .sidebar {
-    position: fixed;
-    top: 0; left: 0;
-    width: 220px;
-    height: 100vh;
+    position: fixed; top: 0; left: 0;
+    width: 220px; height: 100vh;
     background: var(--sidebar-bg);
-    display: flex;
-    flex-direction: column;
+    display: flex; flex-direction: column;
     z-index: 100;
     border-right: 1px solid var(--sidebar-border);
-    transition: background 0.3s ease;
   }
 
-  .logo-wrap {
-    padding: 24px 20px 20px;
-    border-bottom: 1px solid var(--sidebar-border);
-  }
-
-  .logo {
-    font-family: 'Syne', sans-serif;
-    font-size: 20px;
-    font-weight: 800;
-    color: #fff;
-    letter-spacing: -0.03em;
-  }
-
+  .logo-wrap { padding: 24px 20px 20px; border-bottom: 1px solid var(--sidebar-border); }
+  .logo { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -0.03em; }
   .logo span { color: var(--accent); }
-
-  .logo-sub {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    color: rgba(255,255,255,0.25);
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    margin-top: 3px;
-  }
+  .logo-sub { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: rgba(255,255,255,0.2); letter-spacing: 0.15em; text-transform: uppercase; margin-top: 3px; }
 
   .nav { padding: 16px 10px; flex: 1; }
-
-  .nav-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.2);
-    padding: 0 10px;
-    margin-bottom: 6px;
-    margin-top: 14px;
-  }
+  .nav-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.2); padding: 0 10px; margin-bottom: 6px; margin-top: 14px; }
 
   .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    padding: 9px 10px;
-    border-radius: 7px;
-    cursor: pointer;
-    color: rgba(255,255,255,0.4);
-    font-size: 13px;
-    font-weight: 500;
-    border: none;
-    background: none;
-    width: 100%;
-    text-align: left;
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 10px; border-radius: 7px; cursor: pointer;
+    color: rgba(255,255,255,0.4); font-size: 13px; font-weight: 500;
+    border: none; background: none; width: 100%; text-align: left;
     transition: all 0.15s ease;
   }
-
   .nav-item:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.8); }
-
-  .nav-item.active {
-    background: var(--accent-glow);
-    color: var(--accent);
-    border: 1px solid rgba(124,110,247,0.2);
-  }
-
-  [data-theme="light"] .nav-item.active {
-    border-color: rgba(91,78,240,0.2);
-  }
-
+  .nav-item.active { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(124,110,247,0.2); }
   .nav-icon { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.8; }
   .nav-item.active .nav-icon { opacity: 1; }
-
-  .nav-count {
-    margin-left: auto;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    background: rgba(255,255,255,0.07);
-    color: rgba(255,255,255,0.3);
-    padding: 2px 6px;
-    border-radius: 8px;
-  }
-
+  .nav-count { margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 10px; background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 8px; }
   .nav-item.active .nav-count { background: var(--accent-glow); color: var(--accent); }
 
-  .sidebar-footer {
-    padding: 14px 20px;
-    border-top: 1px solid var(--sidebar-border);
-  }
+  .sidebar-footer { padding: 14px 20px; border-top: 1px solid var(--sidebar-border); }
+  .sidebar-clock { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.2); }
 
-  .sidebar-clock {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: rgba(255,255,255,0.2);
-  }
-
-  /* ===== MAIN ===== */
+  /* MAIN */
   .main { margin-left: 220px; min-height: 100vh; display: flex; flex-direction: column; }
 
-  /* ===== TOPBAR ===== */
   .topbar {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 0 28px;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    transition: background 0.3s ease, border-color 0.3s ease;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 28px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 50;
+    transition: background 0.3s, border-color 0.3s;
   }
 
-  .page-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-  }
-
+  .page-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
   .topbar-right { display: flex; align-items: center; gap: 14px; }
 
-  .live-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--green-bg);
-    border: 1px solid rgba(52,211,153,0.2);
-    padding: 4px 10px;
-    border-radius: 20px;
-  }
+  .live-badge { display: flex; align-items: center; gap: 6px; background: var(--green-bg); border: 1px solid rgba(52,211,153,0.2); padding: 4px 10px; border-radius: 20px; }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .live-text { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--green); }
 
-  [data-theme="light"] .live-badge { border-color: rgba(26,122,74,0.2); }
-
-  .live-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--green);
-    animation: blink 2s infinite;
-  }
-
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-
-  .live-text {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    color: var(--green);
-    letter-spacing: 0.05em;
-  }
-
-  /* THEME TOGGLE */
-  .theme-toggle {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 5px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    transition: all 0.2s ease;
-  }
-
-  .theme-btn {
-    width: 26px; height: 22px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    transition: all 0.2s ease;
-    border: none;
-    background: none;
-    cursor: pointer;
-  }
-
+  .theme-toggle { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 5px; cursor: pointer; display: flex; align-items: center; gap: 2px; }
+  .theme-btn { width: 26px; height: 22px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 12px; transition: all 0.2s; border: none; background: none; cursor: pointer; }
   .theme-btn.active { background: var(--accent); }
 
-  .topbar-date {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--ink3);
-    padding-left: 14px;
-    border-left: 1px solid var(--border);
-  }
+  .topbar-date { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink3); padding-left: 14px; border-left: 1px solid var(--border); }
 
-  /* ===== CONTENT ===== */
+  /* CONTENT */
   .content { padding: 24px 28px; flex: 1; }
 
-  /* ===== LIVE STATS ROW ===== */
-  .live-stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-    margin-bottom: 20px;
-  }
+  /* STAT CARDS */
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
 
   .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px 20px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px;
     box-shadow: var(--shadow);
     animation: fadeUp 0.4s ease both;
-    transition: background 0.3s ease, border-color 0.3s ease;
-    position: relative;
-    overflow: hidden;
+    transition: background 0.3s, border-color 0.3s;
+    position: relative; overflow: hidden;
   }
-
-  .stat-card::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-  }
-
-  .stat-card:nth-child(1)::after { background: var(--accent); }
-  .stat-card:nth-child(2)::after { background: var(--green); }
-  .stat-card:nth-child(3)::after { background: var(--amber); }
-  .stat-card:nth-child(4)::after { background: var(--blue); }
   .stat-card:nth-child(2) { animation-delay: 0.05s; }
   .stat-card:nth-child(3) { animation-delay: 0.1s; }
-  .stat-card:nth-child(4) { animation-delay: 0.15s; }
+  .stat-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .stat-card:nth-child(1)::after { background: var(--accent); }
+  .stat-card:nth-child(2)::after { background: var(--green); }
+  .stat-card:nth-child(3)::after { background: #f87171; }
 
-  .stat-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--ink3);
-    margin-bottom: 8px;
-  }
-
-  .stat-value {
-    font-family: 'Syne', sans-serif;
-    font-size: 28px;
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: -0.03em;
-  }
-
+  .stat-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; }
+  .stat-value { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
   .stat-card:nth-child(1) .stat-value { color: var(--accent); }
   .stat-card:nth-child(2) .stat-value { color: var(--green); }
-  .stat-card:nth-child(3) .stat-value { color: var(--amber); }
-  .stat-card:nth-child(4) .stat-value { color: var(--blue); }
+  .stat-card:nth-child(3) .stat-value { color: var(--red); }
+  .stat-sub { font-size: 11px; color: var(--ink3); margin-top: 5px; }
 
-  .stat-sub {
-    font-size: 11px;
-    color: var(--ink3);
-    margin-top: 5px;
-  }
-
-  .stat-trend {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    font-size: 10px;
-    font-weight: 600;
-    margin-top: 4px;
-  }
-
-  .stat-trend.up { color: var(--green); }
-  .stat-trend.neutral { color: var(--ink3); }
-
-  /* ===== CHARTS ROW ===== */
-  .charts-row {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 14px;
-    margin-bottom: 20px;
-  }
-
+  /* CHART */
   .chart-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: var(--shadow);
-    animation: fadeUp 0.4s 0.2s ease both;
-    transition: background 0.3s ease, border-color 0.3s ease;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px;
+    box-shadow: var(--shadow); margin-bottom: 20px;
+    animation: fadeUp 0.4s 0.15s ease both;
+    transition: background 0.3s, border-color 0.3s;
   }
-
-  .chart-card:nth-child(2) { animation-delay: 0.25s; }
-
-  .chart-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-  }
-
-  .chart-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-  }
-
-  .chart-meta {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    color: var(--ink3);
-  }
-
+  .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .chart-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; }
+  .chart-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ink3); }
   .chart-wrap { position: relative; height: 180px; }
 
-  /* ===== TABLE SECTION ===== */
-  .section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    box-shadow: var(--shadow);
-    overflow: hidden;
-    display: none;
-    animation: fadeUp 0.3s ease both;
-    transition: background 0.3s ease, border-color 0.3s ease;
+  /* TABLE */
+  .table-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; box-shadow: var(--shadow); overflow: hidden;
+    animation: fadeUp 0.4s 0.2s ease both;
+    transition: background 0.3s, border-color 0.3s;
   }
 
-  .section.active { display: block; }
-
-  .section-header {
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--surface2);
-    transition: background 0.3s ease;
+  .table-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface2); transition: background 0.3s;
   }
+  .table-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; }
 
-  .section-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-  }
-
-  .section-meta {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    color: var(--ink3);
-  }
-
-  .search-box {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    padding: 6px 11px;
-    transition: background 0.3s ease, border-color 0.3s ease;
-  }
-
-  .search-box input {
-    border: none;
-    outline: none;
-    background: none;
-    font-family: 'Manrope', sans-serif;
-    font-size: 12px;
-    color: var(--ink);
-    width: 160px;
-  }
-
+  .search-box { display: flex; align-items: center; gap: 7px; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 6px 11px; transition: background 0.3s, border-color 0.3s; }
+  .search-box input { border: none; outline: none; background: none; font-family: 'Manrope', sans-serif; font-size: 12px; color: var(--ink); width: 160px; }
   .search-box input::placeholder { color: var(--ink3); }
 
   table { width: 100%; border-collapse: collapse; }
-
-  thead th {
-    padding: 11px 16px;
-    text-align: left;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink3);
-    background: var(--surface2);
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-    transition: background 0.3s ease;
-  }
-
-  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s ease; }
+  thead th { padding: 11px 16px; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; transition: background 0.3s; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
   tbody tr:last-child { border-bottom: none; }
   tbody tr:hover { background: var(--surface2); }
-
-  tbody td {
-    padding: 12px 16px;
-    font-size: 13px;
-    color: var(--ink2);
-    white-space: nowrap;
-  }
-
-  .td-primary { color: var(--ink) !important; font-weight: 600; font-size: 13px; }
+  tbody td { padding: 12px 16px; font-size: 13px; color: var(--ink2); white-space: nowrap; }
+  .td-primary { color: var(--ink) !important; font-weight: 600; }
   .td-mono { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink3) !important; }
 
-  /* ===== BADGES ===== */
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 9px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
   .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
-
   .badge-confirmed { background: var(--green-bg); color: var(--green); }
   .badge-confirmed::before { background: var(--green); }
   .badge-cancelled { background: var(--red-bg); color: var(--red); }
   .badge-cancelled::before { background: var(--red); }
-  .badge-warm { background: rgba(251,146,60,0.12); color: #fb923c; }
-  .badge-warm::before { background: #fb923c; }
-  .badge-hot { background: var(--red-bg); color: var(--red); }
-  .badge-hot::before { background: var(--red); }
-  .badge-cold { background: var(--blue-bg); color: var(--blue); }
-  .badge-cold::before { background: var(--blue); }
 
-  /* ===== EMPTY ===== */
-  .empty { text-align: center; padding: 50px 24px; color: var(--ink3); }
+  .section-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ink3); }
+
+  .empty { text-align: center; padding: 50px; color: var(--ink3); }
   .empty-icon { font-size: 28px; margin-bottom: 10px; opacity: 0.4; }
   .empty-text { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 
-  /* ===== ANIMATIONS ===== */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  /* ===== CALL STATS MINI GRID ===== */
-  .mini-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-
-  .mini-stat {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px;
-    animation: fadeUp 0.4s ease both;
-    transition: background 0.3s ease, border-color 0.3s ease;
-  }
-
-  .mini-stat-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    color: var(--ink3);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: 6px;
-  }
-
-  .mini-stat-value {
-    font-family: 'Syne', sans-serif;
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--ink);
-    letter-spacing: -0.02em;
-  }
-
-  /* scrollbar */
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 </style>
 </head>
 <body>
 
-<!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="logo-wrap">
     <div class="logo">Vox<span>Desk</span></div>
-    <div class="logo-sub">Admin Console</div>
+    <div class="logo-sub">Client Portal</div>
   </div>
   <nav class="nav">
-    <div class="nav-label">Dashboards</div>
-    <button class="nav-item active" onclick="showTab('overview', this)">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5" opacity="0.5"/><rect x="1" y="9" width="6" height="6" rx="1.5" opacity="0.5"/><rect x="9" y="9" width="6" height="6" rx="1.5" opacity="0.3"/></svg>
-      Overview
-    </button>
-    <div class="nav-label">Data</div>
-    <button class="nav-item" onclick="showTab('appointments', this)">
+    <div class="nav-label">Dashboard</div>
+    <button class="nav-item active">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 1v4M11 1v4M2 7h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       Appointments
-      <span class="nav-count" id="nav-apt-count">—</span>
-    </button>
-    <button class="nav-item" onclick="showTab('leads', this)">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" fill="currentColor"/><path d="M2 13c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
-      Leads
-      <span class="nav-count" id="nav-lead-count">—</span>
-    </button>
-    <button class="nav-item" onclick="showTab('demos', this)">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 7h6M5 10h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-      Demos
-      <span class="nav-count" id="nav-demo-count">—</span>
+      <span class="nav-count" id="nav-count">—</span>
     </button>
   </nav>
   <div class="sidebar-footer">
@@ -590,127 +214,65 @@
   </div>
 </aside>
 
-<!-- MAIN -->
 <main class="main">
-
-  <!-- TOPBAR -->
   <div class="topbar">
-    <div class="page-title" id="topbar-title">Overview</div>
+    <div class="page-title">Appointments</div>
     <div class="topbar-right">
       <div class="live-badge">
         <div class="live-dot"></div>
         <div class="live-text">LIVE</div>
       </div>
       <div class="theme-toggle">
-        <button class="theme-btn active" id="btn-dark" onclick="setTheme('dark')" title="Dark mode">🌙</button>
-        <button class="theme-btn" id="btn-light" onclick="setTheme('light')" title="Light mode">☀️</button>
+        <button class="theme-btn active" id="btn-dark" onclick="setTheme('dark')">🌙</button>
+        <button class="theme-btn" id="btn-light" onclick="setTheme('light')">☀️</button>
       </div>
       <div class="topbar-date" id="topbar-date">—</div>
     </div>
   </div>
 
-  <!-- CONTENT -->
   <div class="content">
 
-    <!-- ===== OVERVIEW TAB ===== -->
-    <div class="section active" id="tab-overview" style="background:none; border:none; box-shadow:none; overflow:visible;">
-
-      <!-- STAT CARDS -->
-      <div class="live-stats">
-        <div class="stat-card">
-          <div class="stat-label">Total Appointments</div>
-          <div class="stat-value" id="stat-apt">—</div>
-          <div class="stat-sub">All time bookings</div>
-          <div class="stat-trend up" id="trend-confirmed">↑ — confirmed</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Leads Captured</div>
-          <div class="stat-value" id="stat-leads">—</div>
-          <div class="stat-sub">From outbound calls</div>
-          <div class="stat-trend up" id="trend-hot">↑ — hot leads</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Demos Booked</div>
-          <div class="stat-value" id="stat-demos">—</div>
-          <div class="stat-sub">VoxDesk product demos</div>
-          <div class="stat-trend neutral" id="trend-demos">— this month</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Conversion Rate</div>
-          <div class="stat-value" id="stat-conv">—</div>
-          <div class="stat-sub">Leads → Demos</div>
-          <div class="stat-trend neutral">outbound funnel</div>
-        </div>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Total Bookings</div>
+        <div class="stat-value" id="stat-total">—</div>
+        <div class="stat-sub">All time</div>
       </div>
-
-      <!-- CHARTS -->
-      <div class="charts-row">
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title">Appointments Over Time</div>
-            <div class="chart-meta">last 7 months</div>
-          </div>
-          <div class="chart-wrap">
-            <canvas id="aptChart"></canvas>
-          </div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title">Lead Interest</div>
-            <div class="chart-meta">breakdown</div>
-          </div>
-          <div class="chart-wrap">
-            <canvas id="leadChart"></canvas>
-          </div>
-        </div>
+      <div class="stat-card">
+        <div class="stat-label">Confirmed</div>
+        <div class="stat-value" id="stat-confirmed">—</div>
+        <div class="stat-sub">Active appointments</div>
       </div>
-
-      <!-- CALL STATS -->
-      <div class="chart-card" style="margin-bottom: 0;">
-        <div class="chart-header">
-          <div class="chart-title">📞 Live Call Statistics</div>
-          <div class="chart-meta" id="call-updated">calculating...</div>
-        </div>
-        <div class="mini-stats" style="margin-bottom:0;">
-          <div class="mini-stat">
-            <div class="mini-stat-label">Est. Calls Handled</div>
-            <div class="mini-stat-value" id="cs-calls">—</div>
-          </div>
-          <div class="mini-stat">
-            <div class="mini-stat-label">Est. Call Minutes</div>
-            <div class="mini-stat-value" id="cs-minutes">—</div>
-          </div>
-          <div class="mini-stat">
-            <div class="mini-stat-label">Est. Monthly Cost</div>
-            <div class="mini-stat-value" id="cs-cost">—</div>
-          </div>
-          <div class="mini-stat">
-            <div class="mini-stat-label">Missed Calls Saved</div>
-            <div class="mini-stat-value" id="cs-saved">—</div>
-          </div>
-        </div>
+      <div class="stat-card">
+        <div class="stat-label">Cancelled</div>
+        <div class="stat-value" id="stat-cancelled">—</div>
+        <div class="stat-sub">All time</div>
       </div>
-
     </div>
 
-    <!-- ===== APPOINTMENTS TAB ===== -->
-    <div class="section" id="tab-appointments">
-      <div class="section-header">
-        <div class="section-title">Appointments</div>
-        <div style="display:flex; align-items:center; gap:10px;">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Bookings Over Time</div>
+        <div class="chart-meta">last 7 months</div>
+      </div>
+      <div class="chart-wrap"><canvas id="aptChart"></canvas></div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">All Appointments</div>
+        <div style="display:flex;align-items:center;gap:10px;">
           <div class="search-box">
             <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#9c9a94" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="#9c9a94" stroke-width="1.5" stroke-linecap="round"/></svg>
-            <input type="text" placeholder="Search patients..." oninput="filterTable('apt-tbody', this.value)">
+            <input type="text" placeholder="Search patients..." oninput="filterTable(this.value)">
           </div>
-          <div class="section-meta" id="apt-count-label">— records</div>
+          <div class="section-meta" id="count-label">— records</div>
         </div>
       </div>
       <div style="overflow-x:auto;">
         <table>
           <thead>
-            <tr>
-              <th>ID</th><th>Patient</th><th>Email</th><th>Phone</th><th>Doctor</th><th>Date</th><th>Time</th><th>Status</th>
-            </tr>
+            <tr><th>ID</th><th>Patient</th><th>Email</th><th>Phone</th><th>Doctor</th><th>Date</th><th>Time</th><th>Status</th></tr>
           </thead>
           <tbody id="apt-tbody">
             {% for apt in appointments %}
@@ -740,342 +302,95 @@
       </div>
     </div>
 
-    <!-- ===== LEADS TAB ===== -->
-    <div class="section" id="tab-leads">
-      <div class="section-header">
-        <div class="section-title">Outbound Leads</div>
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div class="search-box">
-            <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#9c9a94" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="#9c9a94" stroke-width="1.5" stroke-linecap="round"/></svg>
-            <input type="text" placeholder="Search leads..." oninput="filterTable('leads-tbody', this.value)">
-          </div>
-          <div class="section-meta" id="leads-count-label">— records</div>
-        </div>
-      </div>
-      <div style="overflow-x:auto;">
-        <table>
-          <thead>
-            <tr><th>ID</th><th>Business</th><th>Owner</th><th>Phone</th><th>Interest</th><th>Notes</th><th>Date</th></tr>
-          </thead>
-          <tbody id="leads-tbody">
-            <tr><td colspan="7"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ===== DEMOS TAB ===== -->
-    <div class="section" id="tab-demos">
-      <div class="section-header">
-        <div class="section-title">Booked Demos</div>
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div class="search-box">
-            <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#9c9a94" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="#9c9a94" stroke-width="1.5" stroke-linecap="round"/></svg>
-            <input type="text" placeholder="Search demos..." oninput="filterTable('demos-tbody', this.value)">
-          </div>
-          <div class="section-meta" id="demos-count-label">— records</div>
-        </div>
-      </div>
-      <div style="overflow-x:auto;">
-        <table>
-          <thead>
-            <tr><th>ID</th><th>Name</th><th>Email</th><th>Date</th><th>Time</th><th>Booked At</th></tr>
-          </thead>
-          <tbody id="demos-tbody">
-            <tr><td colspan="6"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
   </div>
 </main>
 
 <script>
-  // ===== THEME =====
-  function setTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('voxdesk-theme', theme);
-    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
-    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
-    setTimeout(updateCharts, 100);
+  // Theme
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('vd-client-theme', t);
+    document.getElementById('btn-dark').classList.toggle('active', t==='dark');
+    document.getElementById('btn-light').classList.toggle('active', t==='light');
+    setTimeout(buildChart, 100);
   }
+  setTheme(localStorage.getItem('vd-client-theme') || 'dark');
 
-  // Load saved theme
-  const savedTheme = localStorage.getItem('voxdesk-theme') || 'dark';
-  setTheme(savedTheme);
-
-  // ===== CLOCK =====
-  function updateClock() {
+  // Clock
+  setInterval(() => {
     const now = new Date();
-    document.getElementById('topbar-date').textContent =
-      now.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
-    document.getElementById('sidebar-clock').textContent =
-      now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
-  }
-  updateClock();
-  setInterval(updateClock, 1000);
+    document.getElementById('topbar-date').textContent = now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+    document.getElementById('sidebar-clock').textContent = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  }, 1000);
 
-  // ===== TABS =====
-  function showTab(tab, btn) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.getElementById('tab-' + tab).classList.add('active');
-    btn.classList.add('active');
-    const titles = { overview:'Overview', appointments:'Appointments', leads:'Outbound Leads', demos:'Booked Demos' };
-    document.getElementById('topbar-title').textContent = titles[tab];
-  }
-
-  // ===== SEARCH =====
-  function filterTable(tbodyId, query) {
-    const q = query.toLowerCase();
-    document.getElementById(tbodyId).querySelectorAll('tr').forEach(row => {
-      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  // Search
+  function filterTable(q) {
+    document.getElementById('apt-tbody').querySelectorAll('tr').forEach(r => {
+      r.style.display = r.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
     });
   }
 
-  // ===== CHARTS =====
-  let aptChartInst, leadChartInst;
-
-  function getChartColors() {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    return {
-      grid: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)',
-      text: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.35)',
-      accent: isDark ? '#7c6ef7' : '#5b4ef0',
-      green: isDark ? '#34d399' : '#1a7a4a',
-      amber: isDark ? '#fbbf24' : '#d97706',
-      red: isDark ? '#f87171' : '#b83232',
-    };
-  }
-
-  function buildAptChart(data) {
-    const c = getChartColors();
-    const ctx = document.getElementById('aptChart').getContext('2d');
-    if (aptChartInst) aptChartInst.destroy();
-
-    const gradient = ctx.createLinearGradient(0, 0, 0, 180);
-    gradient.addColorStop(0, c.accent + '40');
-    gradient.addColorStop(1, c.accent + '00');
-
-    aptChartInst = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: data.labels,
-        datasets: [{
-          label: 'Appointments',
-          data: data.values,
-          borderColor: c.accent,
-          backgroundColor: gradient,
-          borderWidth: 2,
-          pointRadius: 3,
-          pointBackgroundColor: c.accent,
-          fill: true,
-          tension: 0.4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { grid: { color: c.grid }, ticks: { color: c.text, font: { family: 'IBM Plex Mono', size: 10 } } },
-          y: { grid: { color: c.grid }, ticks: { color: c.text, font: { family: 'IBM Plex Mono', size: 10 }, stepSize: 1 }, beginAtZero: true }
-        }
-      }
-    });
-  }
-
-  function buildLeadChart(hot, warm, cold) {
-    const c = getChartColors();
-    const ctx = document.getElementById('leadChart').getContext('2d');
-    if (leadChartInst) leadChartInst.destroy();
-
-    leadChartInst = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Hot', 'Warm', 'Cold'],
-        datasets: [{
-          data: [hot || 0, warm || 0, cold || 0],
-          backgroundColor: [c.red + 'cc', c.amber + 'cc', c.accent + 'cc'],
-          borderColor: [c.red, c.amber, c.accent],
-          borderWidth: 1.5,
-          hoverOffset: 6
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '65%',
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: { color: c.text, font: { family: 'IBM Plex Mono', size: 10 }, padding: 12, boxWidth: 10 }
-          }
-        }
-      }
-    });
-  }
-
-  function updateCharts() {
-    if (aptChartInst) {
-      buildAptChart({ labels: aptChartInst.data.labels, values: aptChartInst.data.datasets[0].data });
-    }
-    if (leadChartInst) {
-      const d = leadChartInst.data.datasets[0].data;
-      buildLeadChart(d[0], d[1], d[2]);
-    }
-  }
-
-  // ===== PROCESS APPOINTMENTS FROM JINJA =====
-  function processAppointments() {
+  // Stats + Chart
+  let chartInst;
+  function buildChart() {
     const rows = document.getElementById('apt-tbody').querySelectorAll('tr');
-    const total = rows.length;
-    let confirmed = 0;
-
-    // Count by month (last 7)
+    let total = 0, confirmed = 0, cancelled = 0;
     const monthCounts = {};
     const now = new Date();
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = d.toLocaleString('en-US', { month: 'short', year: '2-digit' });
-      monthCounts[key] = 0;
+      monthCounts[d.toLocaleString('en-US',{month:'short',year:'2-digit'})] = 0;
     }
 
     rows.forEach(row => {
       const cells = row.querySelectorAll('td');
       if (cells.length < 8) return;
+      total++;
       const status = cells[7].textContent.trim();
       if (status === 'Confirmed') confirmed++;
-
-      // Parse date dd/mm/yyyy
-      const dateTxt = cells[5].textContent.trim();
-      const parts = dateTxt.split('/');
+      if (status === 'Cancelled') cancelled++;
+      const parts = cells[5].textContent.trim().split('/');
       if (parts.length === 3) {
-        const d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-        const key = d.toLocaleString('en-US', { month: 'short', year: '2-digit' });
+        const key = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).toLocaleString('en-US',{month:'short',year:'2-digit'});
         if (key in monthCounts) monthCounts[key]++;
       }
     });
 
-    document.getElementById('stat-apt').textContent = total;
-    document.getElementById('nav-apt-count').textContent = total;
-    document.getElementById('apt-count-label').textContent = total + ' records';
-    document.getElementById('trend-confirmed').textContent = `↑ ${confirmed} confirmed`;
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-confirmed').textContent = confirmed;
+    document.getElementById('stat-cancelled').textContent = cancelled;
+    document.getElementById('nav-count').textContent = total;
+    document.getElementById('count-label').textContent = total + ' records';
 
-    // Call stats estimates
-    const estCalls = Math.round(total * 1.4);
-    const estMins = estCalls * 2;
-    const estCost = (estMins * 0.085).toFixed(2);
-    document.getElementById('cs-calls').textContent = estCalls;
-    document.getElementById('cs-minutes').textContent = estMins;
-    document.getElementById('cs-cost').textContent = '$' + estCost;
-    document.getElementById('cs-saved').textContent = total;
-    document.getElementById('call-updated').textContent = 'based on ' + total + ' appointments';
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const accent = isDark ? '#7c6ef7' : '#5b4ef0';
+    const grid = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
+    const text = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.35)';
 
-    buildAptChart({ labels: Object.keys(monthCounts), values: Object.values(monthCounts) });
-  }
+    const ctx = document.getElementById('aptChart').getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 180);
+    grad.addColorStop(0, accent + '40');
+    grad.addColorStop(1, accent + '00');
 
-  // ===== FETCH LEADS =====
-  async function loadLeads() {
-    try {
-      const res = await fetch('/admin-leads');
-      const data = await res.json();
-      const rows = data.leads || [];
-
-      let hot = 0, warm = 0, cold = 0;
-      rows.forEach(r => {
-        const lvl = (r[4] || '').toLowerCase();
-        if (lvl === 'hot') hot++;
-        else if (lvl === 'warm') warm++;
-        else if (lvl === 'cold') cold++;
-      });
-
-      document.getElementById('stat-leads').textContent = rows.length;
-      document.getElementById('nav-lead-count').textContent = rows.length;
-      document.getElementById('leads-count-label').textContent = rows.length + ' records';
-      document.getElementById('trend-hot').textContent = `↑ ${hot} hot leads`;
-
-      buildLeadChart(hot, warm, cold);
-
-      const tbody = document.getElementById('leads-tbody');
-      if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No leads yet</div></div></td></tr>`;
-        return;
+    if (chartInst) chartInst.destroy();
+    chartInst = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: Object.keys(monthCounts),
+        datasets: [{ data: Object.values(monthCounts), borderColor: accent, backgroundColor: grad, borderWidth: 2, pointRadius: 3, pointBackgroundColor: accent, fill: true, tension: 0.4 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: grid }, ticks: { color: text, font: { family: 'IBM Plex Mono', size: 10 } } },
+          y: { grid: { color: grid }, ticks: { color: text, font: { family: 'IBM Plex Mono', size: 10 }, stepSize: 1 }, beginAtZero: true }
+        }
       }
-      tbody.innerHTML = rows.map(r => `
-        <tr>
-          <td class="td-mono">${r[0]}</td>
-          <td class="td-primary">${r[1]}</td>
-          <td>${r[2]}</td>
-          <td class="td-mono">${r[3]}</td>
-          <td>${interestBadge(r[4])}</td>
-          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;">${r[5] || '—'}</td>
-          <td class="td-mono">${r[6] ? new Date(r[6]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}</td>
-        </tr>
-      `).join('');
-    } catch(e) {
-      document.getElementById('leads-tbody').innerHTML =
-        `<tr><td colspan="7"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load</div></div></td></tr>`;
-    }
+    });
   }
 
-  // ===== FETCH DEMOS =====
-  async function loadDemos() {
-    try {
-      const res = await fetch('/admin-demos');
-      const data = await res.json();
-      const rows = data.demos || [];
-
-      const thisMonth = rows.filter(r => {
-        if (!r[5]) return false;
-        const d = new Date(r[5]);
-        const now = new Date();
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      }).length;
-
-      document.getElementById('stat-demos').textContent = rows.length;
-      document.getElementById('nav-demo-count').textContent = rows.length;
-      document.getElementById('demos-count-label').textContent = rows.length + ' records';
-      document.getElementById('trend-demos').textContent = `${thisMonth} this month`;
-
-      // Conversion rate
-      const leads = parseInt(document.getElementById('stat-leads').textContent) || 0;
-      const conv = leads > 0 ? Math.round((rows.length / leads) * 100) + '%' : '—';
-      document.getElementById('stat-conv').textContent = conv;
-
-      const tbody = document.getElementById('demos-tbody');
-      if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No demos booked yet</div></div></td></tr>`;
-        return;
-      }
-      tbody.innerHTML = rows.map(r => `
-        <tr>
-          <td class="td-mono">${r[0]}</td>
-          <td class="td-primary">${r[1]}</td>
-          <td>${r[2]}</td>
-          <td class="td-mono">${r[3]}</td>
-          <td class="td-mono">${r[4]}</td>
-          <td class="td-mono">${r[5] ? new Date(r[5]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}</td>
-        </tr>
-      `).join('');
-    } catch(e) {
-      document.getElementById('demos-tbody').innerHTML =
-        `<tr><td colspan="6"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load</div></div></td></tr>`;
-    }
-  }
-
-  function interestBadge(level) {
-    const l = (level || '').toLowerCase();
-    if (l === 'hot') return `<span class="badge badge-hot">Hot</span>`;
-    if (l === 'warm') return `<span class="badge badge-warm">Warm</span>`;
-    if (l === 'cold') return `<span class="badge badge-cold">Cold</span>`;
-    return `<span class="badge">${level || '—'}</span>`;
-  }
-
-  // ===== INIT =====
-  processAppointments();
-  loadLeads().then(() => loadDemos());
+  buildChart();
 </script>
 </body>
 </html>

@@ -467,6 +467,19 @@ def admin_dashboard(request: Request, username: str = Depends(verify_admin)):
 
 
 # -----------------------------
+# ADMIN VOXDESK (private sales dashboard)
+# -----------------------------
+
+@app.get("/admin-voxdesk", response_class=HTMLResponse)
+def admin_voxdesk(request: Request, username: str = Depends(verify_admin)):
+    try:
+        return templates.TemplateResponse("admin_sales.html", {"request": request})
+    except Exception as e:
+        logger.error(f"Error loading sales dashboard: {e}")
+        return HTMLResponse("<h1>Error loading dashboard</h1>", status_code=500)
+
+
+# -----------------------------
 # ADMIN LEADS
 # -----------------------------
 

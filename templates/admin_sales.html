@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoxDesk Sales Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  [data-theme="dark"] {
+    --bg: #09090f;
+    --surface: #111118;
+    --surface2: #17171f;
+    --border: #252530;
+    --ink: #f0f0f8;
+    --ink2: #8888a0;
+    --ink3: #50505f;
+    --sidebar-bg: #07070c;
+    --sidebar-border: rgba(255,255,255,0.05);
+    --accent: #f97316;
+    --accent-glow: rgba(249,115,22,0.12);
+    --green: #34d399;
+    --green-bg: rgba(52,211,153,0.1);
+    --red: #f87171;
+    --red-bg: rgba(248,113,113,0.1);
+    --amber: #fbbf24;
+    --amber-bg: rgba(251,191,36,0.1);
+    --blue: #60a5fa;
+    --blue-bg: rgba(96,165,250,0.1);
+    --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 20px rgba(0,0,0,0.3);
+  }
+
+  [data-theme="light"] {
+    --bg: #faf9f6;
+    --surface: #ffffff;
+    --surface2: #f5f4f0;
+    --border: #e5e3da;
+    --ink: #1a1814;
+    --ink2: #6a6760;
+    --ink3: #9a9890;
+    --sidebar-bg: #1a1814;
+    --sidebar-border: rgba(255,255,255,0.08);
+    --accent: #ea6c00;
+    --accent-glow: rgba(234,108,0,0.1);
+    --green: #1a7a4a;
+    --green-bg: #e8f5ee;
+    --red: #b83232;
+    --red-bg: #faeaea;
+    --amber: #8a6400;
+    --amber-bg: #fef6e0;
+    --blue: #1a4a8a;
+    --blue-bg: #e8eef8;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: 'Manrope', sans-serif; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+
+  /* SIDEBAR */
+  .sidebar { position: fixed; top: 0; left: 0; width: 220px; height: 100vh; background: var(--sidebar-bg); display: flex; flex-direction: column; z-index: 100; border-right: 1px solid var(--sidebar-border); }
+  .logo-wrap { padding: 24px 20px 20px; border-bottom: 1px solid var(--sidebar-border); }
+  .logo { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -0.03em; }
+  .logo span { color: var(--accent); }
+  .logo-sub { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: rgba(255,255,255,0.2); letter-spacing: 0.15em; text-transform: uppercase; margin-top: 3px; }
+  .private-badge { display: inline-flex; align-items: center; gap: 5px; background: var(--accent-glow); border: 1px solid rgba(249,115,22,0.25); border-radius: 4px; padding: 3px 8px; margin-top: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  .nav { padding: 16px 10px; flex: 1; }
+  .nav-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.2); padding: 0 10px; margin-bottom: 6px; margin-top: 14px; }
+  .nav-item { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 7px; cursor: pointer; color: rgba(255,255,255,0.4); font-size: 13px; font-weight: 500; border: none; background: none; width: 100%; text-align: left; transition: all 0.15s; }
+  .nav-item:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.8); }
+  .nav-item.active { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(249,115,22,0.2); }
+  .nav-icon { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.8; }
+  .nav-item.active .nav-icon { opacity: 1; }
+  .nav-count { margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 10px; background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 8px; }
+  .nav-item.active .nav-count { background: var(--accent-glow); color: var(--accent); }
+
+  .sidebar-footer { padding: 14px 20px; border-top: 1px solid var(--sidebar-border); }
+  .sidebar-clock { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.2); }
+
+  /* MAIN */
+  .main { margin-left: 220px; min-height: 100vh; display: flex; flex-direction: column; }
+
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; transition: background 0.3s, border-color 0.3s; }
+  .page-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+  .topbar-right { display: flex; align-items: center; gap: 14px; }
+
+  .private-pill { display: flex; align-items: center; gap: 6px; background: var(--accent-glow); border: 1px solid rgba(249,115,22,0.25); padding: 4px 10px; border-radius: 20px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--accent); }
+
+  .theme-toggle { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 5px; cursor: pointer; display: flex; align-items: center; gap: 2px; }
+  .theme-btn { width: 26px; height: 22px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 12px; transition: all 0.2s; border: none; background: none; cursor: pointer; }
+  .theme-btn.active { background: var(--accent); }
+
+  .topbar-date { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink3); padding-left: 14px; border-left: 1px solid var(--border); }
+
+  /* CONTENT */
+  .content { padding: 24px 28px; flex: 1; }
+
+  /* SECTIONS */
+  .section { display: none; animation: fadeUp 0.3s ease both; }
+  .section.active { display: block; }
+
+  /* STAT CARDS */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow); animation: fadeUp 0.4s ease both; transition: background 0.3s, border-color 0.3s; position: relative; overflow: hidden; }
+  .stat-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .stat-card:nth-child(1)::after { background: var(--accent); }
+  .stat-card:nth-child(2)::after { background: var(--red); }
+  .stat-card:nth-child(3)::after { background: var(--amber); }
+  .stat-card:nth-child(4)::after { background: var(--green); }
+  .stat-card:nth-child(2){animation-delay:.05s} .stat-card:nth-child(3){animation-delay:.1s} .stat-card:nth-child(4){animation-delay:.15s}
+  .stat-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; }
+  .stat-value { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+  .stat-card:nth-child(1) .stat-value { color: var(--accent); }
+  .stat-card:nth-child(2) .stat-value { color: var(--red); }
+  .stat-card:nth-child(3) .stat-value { color: var(--amber); }
+  .stat-card:nth-child(4) .stat-value { color: var(--green); }
+  .stat-sub { font-size: 11px; color: var(--ink3); margin-top: 5px; }
+
+  /* CHARTS */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); animation: fadeUp 0.4s 0.15s ease both; transition: background 0.3s, border-color 0.3s; }
+  .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .chart-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; }
+  .chart-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ink3); }
+  .chart-wrap { position: relative; height: 180px; }
+
+  /* TABLE */
+  .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; animation: fadeUp 0.4s 0.2s ease both; transition: background 0.3s, border-color 0.3s; }
+  .table-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface2); transition: background 0.3s; }
+  .table-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; }
+
+  .search-box { display: flex; align-items: center; gap: 7px; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 6px 11px; transition: background 0.3s, border-color 0.3s; }
+  .search-box input { border: none; outline: none; background: none; font-family: 'Manrope', sans-serif; font-size: 12px; color: var(--ink); width: 160px; }
+  .search-box input::placeholder { color: var(--ink3); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th { padding: 11px 16px; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; transition: background 0.3s; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody td { padding: 12px 16px; font-size: 13px; color: var(--ink2); white-space: nowrap; }
+  .td-primary { color: var(--ink) !important; font-weight: 600; }
+  .td-mono { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink3) !important; }
+  .td-notes { max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .badge-hot { background: var(--red-bg); color: var(--red); } .badge-hot::before { background: var(--red); }
+  .badge-warm { background: rgba(251,146,60,0.12); color: #fb923c; } .badge-warm::before { background: #fb923c; }
+  .badge-cold { background: var(--blue-bg); color: var(--blue); } .badge-cold::before { background: var(--blue); }
+  .badge-demo { background: var(--green-bg); color: var(--green); } .badge-demo::before { background: var(--green); }
+
+  .section-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ink3); }
+
+  .empty { text-align: center; padding: 50px; color: var(--ink3); }
+  .empty-icon { font-size: 28px; margin-bottom: 10px; opacity: 0.4; }
+  .empty-text { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo-wrap">
+    <div class="logo">Vox<span>Desk</span></div>
+    <div class="logo-sub">Sales Console</div>
+    <div class="private-badge">🔒 Private</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-label">Outbound</div>
+    <button class="nav-item active" onclick="showTab('overview', this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5" opacity="0.5"/><rect x="1" y="9" width="6" height="6" rx="1.5" opacity="0.5"/><rect x="9" y="9" width="6" height="6" rx="1.5" opacity="0.3"/></svg>
+      Overview
+    </button>
+    <button class="nav-item" onclick="showTab('leads', this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" fill="currentColor"/><path d="M2 13c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+      Leads
+      <span class="nav-count" id="nav-lead-count">—</span>
+    </button>
+    <button class="nav-item" onclick="showTab('demos', this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 7h6M5 10h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Demos
+      <span class="nav-count" id="nav-demo-count">—</span>
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-clock" id="sidebar-clock">—</div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="page-title" id="topbar-title">Outbound Overview</div>
+    <div class="topbar-right">
+      <div class="private-pill">🔒 Private</div>
+      <div class="theme-toggle">
+        <button class="theme-btn active" id="btn-dark" onclick="setTheme('dark')">🌙</button>
+        <button class="theme-btn" id="btn-light" onclick="setTheme('light')">☀️</button>
+      </div>
+      <div class="topbar-date" id="topbar-date">—</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div class="section active" id="tab-overview">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Total Leads</div>
+          <div class="stat-value" id="stat-total">—</div>
+          <div class="stat-sub">All outbound calls</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Hot Leads</div>
+          <div class="stat-value" id="stat-hot">—</div>
+          <div class="stat-sub">High interest</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Demos Booked</div>
+          <div class="stat-value" id="stat-demos">—</div>
+          <div class="stat-sub">VoxDesk demos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Conversion</div>
+          <div class="stat-value" id="stat-conv">—</div>
+          <div class="stat-sub">Leads → Demos</div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Lead Interest Breakdown</div>
+            <div class="chart-meta">all time</div>
+          </div>
+          <div class="chart-wrap"><canvas id="leadPieChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Demos Over Time</div>
+            <div class="chart-meta">last 7 months</div>
+          </div>
+          <div class="chart-wrap"><canvas id="demoLineChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEADS -->
+    <div class="section" id="tab-leads">
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">All Leads</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="search-box">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#9c9a94" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="#9c9a94" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Search leads..." oninput="filterTable('leads-tbody', this.value)">
+            </div>
+            <div class="section-meta" id="leads-count-label">— records</div>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>ID</th><th>Business</th><th>Owner</th><th>Phone</th><th>Interest</th><th>Notes</th><th>Date</th></tr></thead>
+            <tbody id="leads-tbody">
+              <tr><td colspan="7"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEMOS -->
+    <div class="section" id="tab-demos">
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">Booked Demos</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="search-box">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#9c9a94" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="#9c9a94" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Search demos..." oninput="filterTable('demos-tbody', this.value)">
+            </div>
+            <div class="section-meta" id="demos-count-label">— records</div>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Date</th><th>Time</th><th>Booked At</th></tr></thead>
+            <tbody id="demos-tbody">
+              <tr><td colspan="6"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  // Theme
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('vd-sales-theme', t);
+    document.getElementById('btn-dark').classList.toggle('active', t==='dark');
+    document.getElementById('btn-light').classList.toggle('active', t==='light');
+    setTimeout(buildCharts, 100);
+  }
+  setTheme(localStorage.getItem('vd-sales-theme') || 'dark');
+
+  // Clock
+  setInterval(() => {
+    const now = new Date();
+    document.getElementById('topbar-date').textContent = now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+    document.getElementById('sidebar-clock').textContent = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  }, 1000);
+
+  // Tabs
+  function showTab(tab, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    btn.classList.add('active');
+    const titles = { overview:'Outbound Overview', leads:'All Leads', demos:'Booked Demos' };
+    document.getElementById('topbar-title').textContent = titles[tab];
+  }
+
+  function filterTable(id, q) {
+    document.getElementById(id).querySelectorAll('tr').forEach(r => {
+      r.style.display = r.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+    });
+  }
+
+  function interestBadge(l) {
+    l = (l||'').toLowerCase();
+    if (l==='hot') return `<span class="badge badge-hot">Hot</span>`;
+    if (l==='warm') return `<span class="badge badge-warm">Warm</span>`;
+    if (l==='cold') return `<span class="badge badge-cold">Cold</span>`;
+    return `<span class="badge">${l||'—'}</span>`;
+  }
+
+  function getColors() {
+    const dark = document.documentElement.getAttribute('data-theme')==='dark';
+    return {
+      accent: dark ? '#f97316' : '#ea6c00',
+      green: dark ? '#34d399' : '#1a7a4a',
+      red: dark ? '#f87171' : '#b83232',
+      amber: dark ? '#fbbf24' : '#d97706',
+      blue: dark ? '#60a5fa' : '#1a4a8a',
+      grid: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)',
+      text: dark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.35)',
+    };
+  }
+
+  let pieInst, lineInst;
+  let leadsData = [], demosData = [];
+
+  function buildCharts() {
+    const c = getColors();
+
+    // PIE
+    const hot = leadsData.filter(r=>(r[4]||'').toLowerCase()==='hot').length;
+    const warm = leadsData.filter(r=>(r[4]||'').toLowerCase()==='warm').length;
+    const cold = leadsData.filter(r=>(r[4]||'').toLowerCase()==='cold').length;
+
+    if (pieInst) pieInst.destroy();
+    pieInst = new Chart(document.getElementById('leadPieChart').getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Hot', 'Warm', 'Cold'],
+        datasets: [{ data: [hot, warm, cold], backgroundColor: [c.red+'cc', c.amber+'cc', c.blue+'cc'], borderColor: [c.red, c.amber, c.blue], borderWidth: 1.5, hoverOffset: 6 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position:'bottom', labels: { color: c.text, font: { family:'IBM Plex Mono', size:10 }, padding:12, boxWidth:10 } } } }
+    });
+
+    // LINE
+    const monthCounts = {};
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      monthCounts[d.toLocaleString('en-US',{month:'short',year:'2-digit'})] = 0;
+    }
+    demosData.forEach(r => {
+      if (!r[5]) return;
+      const key = new Date(r[5]).toLocaleString('en-US',{month:'short',year:'2-digit'});
+      if (key in monthCounts) monthCounts[key]++;
+    });
+
+    const ctx2 = document.getElementById('demoLineChart').getContext('2d');
+    const grad = ctx2.createLinearGradient(0,0,0,180);
+    grad.addColorStop(0, c.accent+'40');
+    grad.addColorStop(1, c.accent+'00');
+    if (lineInst) lineInst.destroy();
+    lineInst = new Chart(ctx2, {
+      type: 'line',
+      data: { labels: Object.keys(monthCounts), datasets: [{ data: Object.values(monthCounts), borderColor: c.accent, backgroundColor: grad, borderWidth: 2, pointRadius: 3, pointBackgroundColor: c.accent, fill: true, tension: 0.4 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: {
+        x: { grid: { color: c.grid }, ticks: { color: c.text, font: { family:'IBM Plex Mono', size:10 } } },
+        y: { grid: { color: c.grid }, ticks: { color: c.text, font: { family:'IBM Plex Mono', size:10 }, stepSize:1 }, beginAtZero: true }
+      }}
+    });
+  }
+
+  async function loadLeads() {
+    try {
+      const res = await fetch('/admin-leads');
+      const data = await res.json();
+      leadsData = data.leads || [];
+
+      document.getElementById('nav-lead-count').textContent = leadsData.length;
+      document.getElementById('stat-total').textContent = leadsData.length;
+      document.getElementById('leads-count-label').textContent = leadsData.length + ' records';
+
+      const hot = leadsData.filter(r=>(r[4]||'').toLowerCase()==='hot').length;
+      document.getElementById('stat-hot').textContent = hot;
+
+      const tbody = document.getElementById('leads-tbody');
+      if (!leadsData.length) { tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No leads yet</div></div></td></tr>`; return; }
+      tbody.innerHTML = leadsData.map(r => `
+        <tr>
+          <td class="td-mono">${r[0]}</td>
+          <td class="td-primary">${r[1]}</td>
+          <td>${r[2]}</td>
+          <td class="td-mono">${r[3]}</td>
+          <td>${interestBadge(r[4])}</td>
+          <td class="td-notes">${r[5]||'—'}</td>
+          <td class="td-mono">${r[6] ? new Date(r[6]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}</td>
+        </tr>`).join('');
+    } catch(e) {
+      document.getElementById('leads-tbody').innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load</div></div></td></tr>`;
+    }
+  }
+
+  async function loadDemos() {
+    try {
+      const res = await fetch('/admin-demos');
+      const data = await res.json();
+      demosData = data.demos || [];
+
+      document.getElementById('nav-demo-count').textContent = demosData.length;
+      document.getElementById('stat-demos').textContent = demosData.length;
+      document.getElementById('demos-count-label').textContent = demosData.length + ' records';
+
+      const conv = leadsData.length > 0 ? Math.round((demosData.length / leadsData.length) * 100) + '%' : '—';
+      document.getElementById('stat-conv').textContent = conv;
+
+      const tbody = document.getElementById('demos-tbody');
+      if (!demosData.length) { tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No demos booked yet</div></div></td></tr>`; return; }
+      tbody.innerHTML = demosData.map(r => `
+        <tr>
+          <td class="td-mono">${r[0]}</td>
+          <td class="td-primary">${r[1]}</td>
+          <td>${r[2]}</td>
+          <td class="td-mono">${r[3]}</td>
+          <td class="td-mono">${r[4]}</td>
+          <td class="td-mono">${r[5] ? new Date(r[5]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}</td>
+        </tr>`).join('');
+
+      buildCharts();
+    } catch(e) {
+      document.getElementById('demos-tbody').innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load</div></div></td></tr>`;
+    }
+  }
+
+  loadLeads().then(loadDemos);
+</script>
+</body>
+</html>
