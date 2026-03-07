@@ -4,14 +4,29 @@ import pytz
 import psycopg2
 import smtplib
 import threading
+import logging
 
+from contextlib import contextmanager
 from datetime import datetime
 from email.mime.text import MIMEText
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+import secrets
+
+
+# -----------------------------
+# LOGGING SETUP
+# -----------------------------
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s"
+)
+logger = logging.getLogger("voxdesk")
 
 
 # -----------------------------
@@ -20,18 +35,33 @@ from pydantic import BaseModel
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
+security = HTTPBasic()
 
 
 # -----------------------------
-# DATABASE CONNECTION FUNCTION
+# DATABASE CONNECTION
 # -----------------------------
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
+@contextmanager
 def get_db():
-    conn = psycopg2.connect(DATABASE_URL, sslmode="require")
-    cur = conn.cursor()
-    return conn, cur
+    """
+    Context manager for DB connections.
+    Automatically closes the connection even if an error occurs.
+    Usage: with get_db() as (conn, cur):
+    """
+    conn = None
+    try:
+        conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+        cur = conn.cursor()
+        yield conn, cur
+    except psycopg2.Error as e:
+        logger.error(f"Database connection error: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
 
 
 # -----------------------------
@@ -39,47 +69,49 @@ def get_db():
 # -----------------------------
 
 def create_tables():
+    try:
+        with get_db() as (conn, cur):
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS appointments (
+                appointment_id VARCHAR(20) PRIMARY KEY,
+                patient_name VARCHAR(100),
+                email VARCHAR(150),
+                phone VARCHAR(30),
+                doctor_name VARCHAR(50),
+                date VARCHAR(20),
+                time VARCHAR(10),
+                status VARCHAR(20)
+            );
+            """)
 
-    conn, cur = get_db()
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS leads (
+                lead_id VARCHAR(20) PRIMARY KEY,
+                business_name VARCHAR(150),
+                owner_name VARCHAR(150),
+                phone VARCHAR(30),
+                interest_level VARCHAR(20),
+                notes TEXT,
+                created_at TIMESTAMP
+            );
+            """)
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS appointments (
-    appointment_id VARCHAR(20) PRIMARY KEY,
-    patient_name VARCHAR(100),
-    email VARCHAR(150),
-    phone VARCHAR(30),
-    doctor_name VARCHAR(50),
-    date VARCHAR(20),
-    time VARCHAR(10),
-    status VARCHAR(20)
-    );
-    """)
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS demos (
+                demo_id VARCHAR(20) PRIMARY KEY,
+                name VARCHAR(150),
+                email VARCHAR(150),
+                date VARCHAR(20),
+                time VARCHAR(10),
+                created_at TIMESTAMP
+            );
+            """)
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS leads (
-    lead_id VARCHAR(20) PRIMARY KEY,
-    business_name VARCHAR(150),
-    owner_name VARCHAR(150),
-    phone VARCHAR(30),
-    interest_level VARCHAR(20),
-    notes TEXT,
-    created_at TIMESTAMP
-    );
-    """)
+            conn.commit()
+            logger.info("Tables created / verified successfully")
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS demos (
-    demo_id VARCHAR(20) PRIMARY KEY,
-    name VARCHAR(150),
-    email VARCHAR(150),
-    date VARCHAR(20),
-    time VARCHAR(10),
-    created_at TIMESTAMP
-    );
-    """)
-
-    conn.commit()
-    conn.close()
+    except Exception as e:
+        logger.error(f"Failed to create tables: {e}")
 
 create_tables()
 
@@ -91,20 +123,49 @@ create_tables()
 EMAIL_ADDRESS = os.environ.get("GMAIL_ADDRESS")
 EMAIL_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD")
 
-def send_email(to_email, subject, html):
-
-    msg = MIMEText(html, "html")
-    msg["Subject"] = subject
-    msg["From"] = EMAIL_ADDRESS
-    msg["To"] = to_email
-
+def send_email(to_email: str, subject: str, html: str):
+    """Send HTML email. Logs success or failure — never silently fails."""
     try:
-        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-        server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-        server.sendmail(EMAIL_ADDRESS, to_email, msg.as_string())
-        server.quit()
-    except:
-        pass
+        msg = MIMEText(html, "html")
+        msg["Subject"] = subject
+        msg["From"] = EMAIL_ADDRESS
+        msg["To"] = to_email
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            server.sendmail(EMAIL_ADDRESS, to_email, msg.as_string())
+
+        logger.info(f"Email sent to {to_email} | Subject: {subject}")
+
+    except smtplib.SMTPException as e:
+        logger.error(f"Failed to send email to {to_email}: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected email error: {e}")
+
+
+# -----------------------------
+# ADMIN AUTH
+# -----------------------------
+
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "changeme")
+
+def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
+    """
+    Protects admin routes with a username/password.
+    Set ADMIN_USERNAME and ADMIN_PASSWORD in your Render environment variables.
+    """
+    correct_user = secrets.compare_digest(credentials.username, ADMIN_USERNAME)
+    correct_pass = secrets.compare_digest(credentials.password, ADMIN_PASSWORD)
+
+    if not (correct_user and correct_pass):
+        logger.warning(f"Failed admin login attempt: username='{credentials.username}'")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
 
 
 # -----------------------------
@@ -160,7 +221,6 @@ def root():
 
 @app.get("/get-current-datetime")
 def get_datetime():
-
     dubai = pytz.timezone("Asia/Dubai")
     now = datetime.now(dubai)
 
@@ -178,62 +238,60 @@ def get_datetime():
 
 @app.post("/book-appointment")
 def book_appointment(appointment: Appointment):
+    try:
+        with get_db() as (conn, cur):
 
-    conn, cur = get_db()
+            # Check for double booking
+            cur.execute("""
+                SELECT * FROM appointments
+                WHERE doctor_name=%s AND date=%s AND time=%s AND status='Confirmed'
+            """, (appointment.doctor_name, appointment.date, appointment.time))
 
-    cur.execute("""
-    SELECT * FROM appointments
-    WHERE doctor_name=%s AND date=%s AND time=%s AND status='Confirmed'
-    """,(
-        appointment.doctor_name,
-        appointment.date,
-        appointment.time
-    ))
+            if cur.fetchone():
+                return {
+                    "success": False,
+                    "message": f"Dr. {appointment.doctor_name} is already booked at that time."
+                }
 
-    existing = cur.fetchone()
+            appointment_id = "APT" + str(uuid.uuid4())[:6].upper()
 
-    if existing:
-        conn.close()
+            cur.execute("""
+                INSERT INTO appointments VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            """, (
+                appointment_id,
+                appointment.patient_name,
+                appointment.email,
+                appointment.phone,
+                appointment.doctor_name,
+                appointment.date,
+                appointment.time,
+                "Confirmed"
+            ))
+
+            conn.commit()
+            logger.info(f"Appointment booked: {appointment_id} | {appointment.patient_name} | Dr. {appointment.doctor_name}")
+
+        html = f"""
+        <h2>Appointment Confirmed ✅</h2>
+        <p><strong>Doctor:</strong> {appointment.doctor_name}</p>
+        <p><strong>Date:</strong> {appointment.date}</p>
+        <p><strong>Time:</strong> {appointment.time}</p>
+        <p><strong>Appointment ID:</strong> {appointment_id}</p>
+        """
+
+        threading.Thread(
+            target=send_email,
+            args=(appointment.email, "Appointment Confirmation", html)
+        ).start()
+
         return {
-            "success": False,
-            "message": f"Dr. {appointment.doctor_name} is already booked."
+            "success": True,
+            "message": f"Appointment confirmed. ID: {appointment_id}"
         }
 
-    appointment_id = "APT" + str(uuid.uuid4())[:6].upper()
-
-    cur.execute("""
-    INSERT INTO appointments VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-    """,(
-        appointment_id,
-        appointment.patient_name,
-        appointment.email,
-        appointment.phone,
-        appointment.doctor_name,
-        appointment.date,
-        appointment.time,
-        "Confirmed"
-    ))
-
-    conn.commit()
-    conn.close()
-
-    html = f"""
-    <h2>Appointment Confirmed</h2>
-    <p>Doctor: {appointment.doctor_name}</p>
-    <p>Date: {appointment.date}</p>
-    <p>Time: {appointment.time}</p>
-    <p>Appointment ID: {appointment_id}</p>
-    """
-
-    threading.Thread(
-        target=send_email,
-        args=(appointment.email,"Appointment Confirmation",html)
-    ).start()
-
-    return {
-        "success": True,
-        "message": f"Appointment confirmed. ID: {appointment_id}"
-    }
+    except Exception as e:
+        logger.error(f"Error booking appointment: {e}")
+        return {"success": False, "message": "Something went wrong. Please try again."}
 
 
 # -----------------------------
@@ -242,25 +300,28 @@ def book_appointment(appointment: Appointment):
 
 @app.post("/cancel-appointment")
 def cancel_appointment(request: CancelRequest):
+    try:
+        with get_db() as (conn, cur):
 
-    conn, cur = get_db()
+            cur.execute("""
+                UPDATE appointments
+                SET status='Cancelled'
+                WHERE appointment_id=%s
+                RETURNING *
+            """, (request.appointment_id.upper(),))
 
-    cur.execute("""
-    UPDATE appointments
-    SET status='Cancelled'
-    WHERE appointment_id=%s
-    RETURNING *
-    """,(request.appointment_id.upper(),))
+            updated = cur.fetchone()
+            conn.commit()
 
-    updated = cur.fetchone()
+        if updated:
+            logger.info(f"Appointment cancelled: {request.appointment_id}")
+            return {"success": True, "message": "Appointment cancelled"}
 
-    conn.commit()
-    conn.close()
+        return {"success": False, "message": "Appointment not found"}
 
-    if updated:
-        return {"success": True, "message": "Appointment cancelled"}
-
-    return {"success": False, "message": "Appointment not found"}
+    except Exception as e:
+        logger.error(f"Error cancelling appointment {request.appointment_id}: {e}")
+        return {"success": False, "message": "Something went wrong. Please try again."}
 
 
 # -----------------------------
@@ -269,58 +330,61 @@ def cancel_appointment(request: CancelRequest):
 
 @app.post("/reschedule-appointment")
 def reschedule(request: RescheduleRequest):
+    try:
+        with get_db() as (conn, cur):
 
-    conn, cur = get_db()
+            cur.execute("""
+                UPDATE appointments
+                SET date=%s, time=%s
+                WHERE appointment_id=%s
+                RETURNING *
+            """, (request.new_date, request.new_time, request.appointment_id))
 
-    cur.execute("""
-    UPDATE appointments
-    SET date=%s,time=%s
-    WHERE appointment_id=%s
-    RETURNING *
-    """,(
-        request.new_date,
-        request.new_time,
-        request.appointment_id
-    ))
+            updated = cur.fetchone()
+            conn.commit()
 
-    updated = cur.fetchone()
+        if updated:
+            logger.info(f"Appointment rescheduled: {request.appointment_id} → {request.new_date} {request.new_time}")
+            return {"success": True, "message": "Appointment rescheduled"}
 
-    conn.commit()
-    conn.close()
+        return {"success": False, "message": "Appointment not found"}
 
-    if updated:
-        return {"success": True, "message": "Appointment rescheduled"}
-
-    return {"success": False, "message": "Appointment not found"}
+    except Exception as e:
+        logger.error(f"Error rescheduling appointment {request.appointment_id}: {e}")
+        return {"success": False, "message": "Something went wrong. Please try again."}
 
 
 # -----------------------------
-# SAVE LEAD (AI COLD CALLER)
+# SAVE LEAD
 # -----------------------------
 
 @app.post("/save-lead")
 def save_lead(lead: Lead):
+    try:
+        with get_db() as (conn, cur):
 
-    conn, cur = get_db()
+            lead_id = "LD" + str(uuid.uuid4())[:6].upper()
 
-    lead_id = "LD" + str(uuid.uuid4())[:6].upper()
+            cur.execute("""
+                INSERT INTO leads VALUES (%s,%s,%s,%s,%s,%s,%s)
+            """, (
+                lead_id,
+                lead.business_name,
+                lead.owner_name,
+                lead.phone,
+                lead.interest_level,
+                lead.notes,
+                datetime.utcnow()
+            ))
 
-    cur.execute("""
-    INSERT INTO leads VALUES (%s,%s,%s,%s,%s,%s,%s)
-    """,(
-        lead_id,
-        lead.business_name,
-        lead.owner_name,
-        lead.phone,
-        lead.interest_level,
-        lead.notes,
-        datetime.utcnow()
-    ))
+            conn.commit()
+            logger.info(f"Lead saved: {lead_id} | {lead.business_name}")
 
-    conn.commit()
-    conn.close()
+        return {"success": True, "message": "Lead saved"}
 
-    return {"success": True, "message": "Lead saved"}
+    except Exception as e:
+        logger.error(f"Error saving lead: {e}")
+        return {"success": False, "message": "Something went wrong. Please try again."}
 
 
 # -----------------------------
@@ -329,102 +393,111 @@ def save_lead(lead: Lead):
 
 @app.post("/book-demo")
 def book_demo(demo: Demo):
+    try:
+        with get_db() as (conn, cur):
 
-    conn, cur = get_db()
+            demo_id = "DM" + str(uuid.uuid4())[:6].upper()
 
-    demo_id = "DM" + str(uuid.uuid4())[:6].upper()
+            cur.execute("""
+                INSERT INTO demos VALUES (%s,%s,%s,%s,%s,%s)
+            """, (
+                demo_id,
+                demo.name,
+                demo.email,
+                demo.date,
+                demo.time,
+                datetime.utcnow()
+            ))
 
-    cur.execute("""
-    INSERT INTO demos VALUES (%s,%s,%s,%s,%s,%s)
-    """,(
-        demo_id,
-        demo.name,
-        demo.email,
-        demo.date,
-        demo.time,
-        datetime.utcnow()
-    ))
+            conn.commit()
+            logger.info(f"Demo booked: {demo_id} | {demo.name} | {demo.email}")
 
-    conn.commit()
-    conn.close()
+        html = f"""
+        <h2>VoxDesk Demo Scheduled ✅</h2>
+        <p><strong>Name:</strong> {demo.name}</p>
+        <p><strong>Date:</strong> {demo.date}</p>
+        <p><strong>Time:</strong> {demo.time}</p>
+        <p>We'll see you then!</p>
+        """
 
-    html = f"""
-    <h2>VoxDesk Demo Scheduled</h2>
-    <p>Date: {demo.date}</p>
-    <p>Time: {demo.time}</p>
-    """
+        threading.Thread(
+            target=send_email,
+            args=(demo.email, "VoxDesk Demo Confirmation", html)
+        ).start()
 
-    threading.Thread(
-        target=send_email,
-        args=(demo.email,"VoxDesk Demo Confirmation",html)
-    ).start()
+        return {"success": True, "message": "Demo booked"}
 
-    return {"success": True, "message": "Demo booked"}
+    except Exception as e:
+        logger.error(f"Error booking demo: {e}")
+        return {"success": False, "message": "Something went wrong. Please try again."}
 
 
 # -----------------------------
-# ADMIN APPOINTMENTS
+# ADMIN APPOINTMENTS (now protected)
 # -----------------------------
 
 @app.get("/admin", response_class=HTMLResponse)
-def admin_dashboard(request: Request):
+def admin_dashboard(request: Request, username: str = Depends(verify_admin)):
+    try:
+        with get_db() as (conn, cur):
+            cur.execute("SELECT * FROM appointments ORDER BY date, time")
+            rows = cur.fetchall()
 
-    conn, cur = get_db()
+        appointments = [
+            {
+                "appointment_id": r[0],
+                "patient_name": r[1],
+                "email": r[2],
+                "phone": r[3],
+                "doctor_name": r[4],
+                "date": r[5],
+                "time": r[6],
+                "status": r[7]
+            }
+            for r in rows
+        ]
 
-    cur.execute("SELECT * FROM appointments ORDER BY date,time")
-    rows = cur.fetchall()
+        return templates.TemplateResponse(
+            "admin.html",
+            {"request": request, "appointments": appointments}
+        )
 
-    conn.close()
-
-    appointments = []
-
-    for r in rows:
-        appointments.append({
-            "appointment_id": r[0],
-            "patient_name": r[1],
-            "email": r[2],
-            "phone": r[3],
-            "doctor_name": r[4],
-            "date": r[5],
-            "time": r[6],
-            "status": r[7]
-        })
-
-    return templates.TemplateResponse(
-        "admin.html",
-        {"request": request, "appointments": appointments}
-    )
+    except Exception as e:
+        logger.error(f"Error loading admin dashboard: {e}")
+        return HTMLResponse("<h1>Error loading dashboard</h1>", status_code=500)
 
 
 # -----------------------------
-# ADMIN LEADS
+# ADMIN LEADS (now protected)
 # -----------------------------
 
 @app.get("/admin-leads")
-def admin_leads():
+def admin_leads(username: str = Depends(verify_admin)):
+    try:
+        with get_db() as (conn, cur):
+            cur.execute("SELECT * FROM leads ORDER BY created_at DESC")
+            rows = cur.fetchall()
 
-    conn, cur = get_db()
+        return {"leads": rows}
 
-    cur.execute("SELECT * FROM leads ORDER BY created_at DESC")
-    rows = cur.fetchall()
-
-    conn.close()
-
-    return {"leads": rows}
+    except Exception as e:
+        logger.error(f"Error loading leads: {e}")
+        return {"leads": [], "error": "Failed to load leads"}
 
 
 # -----------------------------
-# ADMIN DEMOS
+# ADMIN DEMOS (now protected)
 # -----------------------------
 
 @app.get("/admin-demos")
-def admin_demos():
+def admin_demos(username: str = Depends(verify_admin)):
+    try:
+        with get_db() as (conn, cur):
+            cur.execute("SELECT * FROM demos ORDER BY created_at DESC")
+            rows = cur.fetchall()
 
-    conn, cur = get_db()
+        return {"demos": rows}
 
-    cur.execute("SELECT * FROM demos ORDER BY created_at DESC")
-    rows = cur.fetchall()
-
-    conn.close()
-
-    return {"demos": rows}
+    except Exception as e:
+        logger.error(f"Error loading demos: {e}")
+        return {"demos": [], "error": "Failed to load demos"}
