@@ -5,6 +5,7 @@ import psycopg2
 import smtplib
 import threading
 import logging
+import secrets
 
 from contextlib import contextmanager
 from datetime import datetime
@@ -15,7 +16,6 @@ from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-import secrets
 
 
 # -----------------------------
@@ -33,7 +33,7 @@ logger = logging.getLogger("voxdesk")
 # APP INITIALIZATION
 # -----------------------------
 
-app = FastAPI()
+app = FastAPI(docs_url=None, redoc_url=None)  # Swagger hidden in production
 templates = Jinja2Templates(directory="templates")
 security = HTTPBasic()
 
@@ -241,7 +241,6 @@ def book_appointment(appointment: Appointment):
     try:
         with get_db() as (conn, cur):
 
-            # Check for double booking
             cur.execute("""
                 SELECT * FROM appointments
                 WHERE doctor_name=%s AND date=%s AND time=%s AND status='Confirmed'
@@ -433,7 +432,7 @@ def book_demo(demo: Demo):
 
 
 # -----------------------------
-# ADMIN APPOINTMENTS (now protected)
+# ADMIN APPOINTMENTS
 # -----------------------------
 
 @app.get("/admin", response_class=HTMLResponse)
@@ -468,7 +467,7 @@ def admin_dashboard(request: Request, username: str = Depends(verify_admin)):
 
 
 # -----------------------------
-# ADMIN LEADS (now protected)
+# ADMIN LEADS
 # -----------------------------
 
 @app.get("/admin-leads")
@@ -478,15 +477,18 @@ def admin_leads(username: str = Depends(verify_admin)):
             cur.execute("SELECT * FROM leads ORDER BY created_at DESC")
             rows = cur.fetchall()
 
-        return {"leads": rows}
+        return {"leads": [
+            [r[0], r[1], r[2], r[3], r[4], r[5], r[6].isoformat() if r[6] else None]
+            for r in rows
+        ]}
 
     except Exception as e:
         logger.error(f"Error loading leads: {e}")
-        return {"leads": [], "error": "Failed to load leads"}
+        return {"leads": []}
 
 
 # -----------------------------
-# ADMIN DEMOS (now protected)
+# ADMIN DEMOS
 # -----------------------------
 
 @app.get("/admin-demos")
@@ -496,8 +498,11 @@ def admin_demos(username: str = Depends(verify_admin)):
             cur.execute("SELECT * FROM demos ORDER BY created_at DESC")
             rows = cur.fetchall()
 
-        return {"demos": rows}
+        return {"demos": [
+            [r[0], r[1], r[2], r[3], r[4], r[5].isoformat() if r[5] else None]
+            for r in rows
+        ]}
 
     except Exception as e:
         logger.error(f"Error loading demos: {e}")
-        return {"demos": [], "error": "Failed to load demos"}
+        return {"demos": []}
