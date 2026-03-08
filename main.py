@@ -238,6 +238,21 @@ def book_appointment(appointment: Appointment):
                     "message": f"Dr. {appointment.doctor_name} is already booked at that time."
                 }
 
+            # Reject past dates
+            try:
+                apt_date = datetime.strptime(appointment.date, "%d/%m/%Y").date()
+                today = datetime.now(pytz.timezone("Asia/Dubai")).date()
+                if apt_date < today:
+                    return {
+                        "success": False,
+                        "message": "Cannot book an appointment in the past. Please choose a future date."
+                    }
+            except ValueError:
+                return {
+                    "success": False,
+                    "message": "Invalid date format. Please use DD/MM/YYYY."
+                }
+
             appointment_id = "APT" + str(uuid.uuid4())[:6].upper()
 
             cur.execute("""
