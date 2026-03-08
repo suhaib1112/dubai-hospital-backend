@@ -256,17 +256,114 @@ def book_appointment(appointment: Appointment):
             conn.commit()
             logger.info(f"Appointment booked: {appointment_id} | {appointment.patient_name} | Dr. {appointment.doctor_name}")
 
-        html = f"""
-        <h2>Appointment Confirmed ✅</h2>
-        <p><strong>Doctor:</strong> {appointment.doctor_name}</p>
-        <p><strong>Date:</strong> {appointment.date}</p>
-        <p><strong>Time:</strong> {appointment.time}</p>
-        <p><strong>Appointment ID:</strong> {appointment_id}</p>
-        """
+        html = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f4f4f7;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f7;padding:40px 20px;">
+<tr><td align="center">
+<table width="580" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
+
+  <!-- HEADER -->
+  <tr><td style="background:#1a1916;padding:32px 48px;text-align:center;">
+    <p style="margin:0;font-size:26px;font-weight:800;color:#ffffff;letter-spacing:-1px;">VoxDesk</p>
+    <p style="margin:6px 0 0;font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:3px;text-transform:uppercase;">AI Receptionist</p>
+  </td></tr>
+
+  <!-- GREEN BANNER -->
+  <tr><td style="background:#d1fae5;padding:18px 48px;text-align:center;">
+    <p style="margin:0;font-size:16px;font-weight:700;color:#065f46;">&#10003;&nbsp; Your Appointment is Confirmed</p>
+  </td></tr>
+
+  <!-- GREETING -->
+  <tr><td style="padding:40px 48px 0;">
+    <p style="margin:0 0 12px;font-size:16px;font-weight:600;color:#111827;">Hi {appointment.patient_name},</p>
+    <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.8;">Great news — your appointment has been successfully booked through VoxDesk. We have everything confirmed on our end. Please review the details below and save this email for your records.</p>
+  </td></tr>
+
+  <!-- DETAILS BOX -->
+  <tr><td style="padding:28px 48px 0;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+      <tr><td style="padding:14px 22px;background:#f3f4f6;border-bottom:1px solid #e5e7eb;">
+        <p style="margin:0;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1.5px;">Appointment Details</p>
+      </td></tr>
+      <tr><td style="padding:16px 22px;border-bottom:1px solid #e5e7eb;">
+        <p style="margin:0;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;">Doctor</p>
+        <p style="margin:5px 0 0;font-size:15px;font-weight:600;color:#111827;">Dr. {appointment.doctor_name}</p>
+      </td></tr>
+      <tr><td style="padding:16px 22px;border-bottom:1px solid #e5e7eb;">
+        <p style="margin:0;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;">Date</p>
+        <p style="margin:5px 0 0;font-size:15px;font-weight:600;color:#111827;">{appointment.date}</p>
+      </td></tr>
+      <tr><td style="padding:16px 22px;border-bottom:1px solid #e5e7eb;">
+        <p style="margin:0;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;">Time</p>
+        <p style="margin:5px 0 0;font-size:15px;font-weight:600;color:#111827;">{appointment.time}</p>
+      </td></tr>
+      <tr><td style="padding:16px 22px;">
+        <p style="margin:0;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;">Appointment ID</p>
+        <p style="margin:5px 0 0;font-size:15px;font-weight:700;color:#111827;font-family:monospace;background:#e5e7eb;display:inline-block;padding:4px 10px;border-radius:5px;">{appointment_id}</p>
+      </td></tr>
+    </table>
+  </td></tr>
+
+  <!-- WHAT TO BRING -->
+  <tr><td style="padding:28px 48px 0;">
+    <p style="margin:0 0 14px;font-size:14px;font-weight:700;color:#111827;">&#128203;&nbsp; What to Bring</p>
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td width="20" valign="top" style="padding-top:2px;"><p style="margin:0;font-size:13px;color:#059669;">&#10003;</p></td>
+        <td><p style="margin:0 0 8px;font-size:13px;color:#6b7280;line-height:1.6;">A valid photo ID (passport, national ID, or driving licence)</p></td>
+      </tr>
+      <tr>
+        <td width="20" valign="top" style="padding-top:2px;"><p style="margin:0;font-size:13px;color:#059669;">&#10003;</p></td>
+        <td><p style="margin:0 0 8px;font-size:13px;color:#6b7280;line-height:1.6;">Any previous medical records or test results if applicable</p></td>
+      </tr>
+      <tr>
+        <td width="20" valign="top" style="padding-top:2px;"><p style="margin:0;font-size:13px;color:#059669;">&#10003;</p></td>
+        <td><p style="margin:0 0 8px;font-size:13px;color:#6b7280;line-height:1.6;">Please arrive 10 minutes early to complete any paperwork</p></td>
+      </tr>
+      <tr>
+        <td width="20" valign="top" style="padding-top:2px;"><p style="margin:0;font-size:13px;color:#059669;">&#10003;</p></td>
+        <td><p style="margin:0;font-size:13px;color:#6b7280;line-height:1.6;">Your insurance card if applicable</p></td>
+      </tr>
+    </table>
+  </td></tr>
+
+  <!-- RESCHEDULE / CANCEL -->
+  <tr><td style="padding:28px 48px 0;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:20px 22px;">
+      <tr><td>
+        <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#92400e;">&#128336;&nbsp; Need to Cancel or Reschedule?</p>
+        <p style="margin:0;font-size:13px;color:#78350f;line-height:1.7;">Simply reply to this email or call us and quote your Appointment ID: <strong style="font-family:monospace;">{appointment_id}</strong>. We kindly ask for at least 24 hours notice so we can offer your slot to another patient.</p>
+      </td></tr>
+    </table>
+  </td></tr>
+
+  <!-- CLOSING -->
+  <tr><td style="padding:28px 48px 36px;">
+    <p style="margin:0 0 16px;font-size:14px;color:#6b7280;line-height:1.8;">If you have any questions before your appointment, do not hesitate to reach out. We look forward to seeing you!</p>
+    <p style="margin:0;font-size:14px;color:#374151;font-weight:600;">Warm regards,</p>
+    <p style="margin:4px 0 0;font-size:14px;color:#374151;">The VoxDesk Team</p>
+  </td></tr>
+
+  <!-- DIVIDER -->
+  <tr><td style="padding:0 48px;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;"></td></tr>
+
+  <!-- FOOTER -->
+  <tr><td style="padding:24px 48px;text-align:center;">
+    <p style="margin:0;font-size:12px;color:#9ca3af;">This confirmation was sent automatically by <strong>VoxDesk AI Receptionist</strong>.</p>
+    <p style="margin:6px 0 0;font-size:11px;color:#d1d5db;">&#127760;&nbsp; voxdesk.com &nbsp;|&nbsp; Powered by VoxDesk &copy; 2026</p>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>"""
 
         threading.Thread(
             target=send_email,
-            args=(appointment.email, "Appointment Confirmation", html)
+            args=(appointment.email, f"Appointment Confirmed — {appointment.date} at {appointment.time}", html)
         ).start()
 
         return {
@@ -397,17 +494,106 @@ def book_demo(demo: Demo):
             conn.commit()
             logger.info(f"Demo booked: {demo_id} | {demo.name} | {demo.email}")
 
-        html = f"""
-        <h2>VoxDesk Demo Scheduled ✅</h2>
-        <p><strong>Name:</strong> {demo.name}</p>
-        <p><strong>Date:</strong> {demo.date}</p>
-        <p><strong>Time:</strong> {demo.time}</p>
-        <p>We'll see you then!</p>
-        """
+        html = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f4f4f7;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f7;padding:40px 20px;">
+<tr><td align="center">
+<table width="580" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
+
+  <!-- HEADER -->
+  <tr><td style="background:#1a1916;padding:32px 48px;text-align:center;">
+    <p style="margin:0;font-size:26px;font-weight:800;color:#ffffff;letter-spacing:-1px;">VoxDesk</p>
+    <p style="margin:6px 0 0;font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:3px;text-transform:uppercase;">AI Receptionist</p>
+  </td></tr>
+
+  <!-- BLUE BANNER -->
+  <tr><td style="background:#dbeafe;padding:18px 48px;text-align:center;">
+    <p style="margin:0;font-size:16px;font-weight:700;color:#1e40af;">&#128197;&nbsp; Your Demo is Scheduled</p>
+  </td></tr>
+
+  <!-- GREETING -->
+  <tr><td style="padding:40px 48px 0;">
+    <p style="margin:0 0 12px;font-size:16px;font-weight:600;color:#111827;">Hi {demo.name},</p>
+    <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.8;">Thank you for your interest in VoxDesk. Your demo has been confirmed and we are excited to show you exactly how our AI receptionist works. This will be a live walkthrough — no slides, no fluff, just the real product in action.</p>
+  </td></tr>
+
+  <!-- DETAILS BOX -->
+  <tr><td style="padding:28px 48px 0;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+      <tr><td style="padding:14px 22px;background:#f3f4f6;border-bottom:1px solid #e5e7eb;">
+        <p style="margin:0;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1.5px;">Demo Details</p>
+      </td></tr>
+      <tr><td style="padding:16px 22px;border-bottom:1px solid #e5e7eb;">
+        <p style="margin:0;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;">Date</p>
+        <p style="margin:5px 0 0;font-size:15px;font-weight:600;color:#111827;">{demo.date}</p>
+      </td></tr>
+      <tr><td style="padding:16px 22px;">
+        <p style="margin:0;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;">Time</p>
+        <p style="margin:5px 0 0;font-size:15px;font-weight:600;color:#111827;">{demo.time}</p>
+      </td></tr>
+    </table>
+  </td></tr>
+
+  <!-- WHAT TO EXPECT -->
+  <tr><td style="padding:28px 48px 0;">
+    <p style="margin:0 0 14px;font-size:14px;font-weight:700;color:#111827;">&#127775;&nbsp; What We Will Cover</p>
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td width="24" valign="top"><p style="margin:0;font-size:13px;color:#3b82f6;">&#8594;</p></td>
+        <td><p style="margin:0 0 10px;font-size:13px;color:#6b7280;line-height:1.7;">A live demo of VoxDesk answering a real inbound call and booking an appointment automatically</p></td>
+      </tr>
+      <tr>
+        <td width="24" valign="top"><p style="margin:0;font-size:13px;color:#3b82f6;">&#8594;</p></td>
+        <td><p style="margin:0 0 10px;font-size:13px;color:#6b7280;line-height:1.7;">How the AI handles cancellations, reschedules, and questions without any human involvement</p></td>
+      </tr>
+      <tr>
+        <td width="24" valign="top"><p style="margin:0;font-size:13px;color:#3b82f6;">&#8594;</p></td>
+        <td><p style="margin:0 0 10px;font-size:13px;color:#6b7280;line-height:1.7;">Your client dashboard — where you see all appointments, analytics, and manage everything</p></td>
+      </tr>
+      <tr>
+        <td width="24" valign="top"><p style="margin:0;font-size:13px;color:#3b82f6;">&#8594;</p></td>
+        <td><p style="margin:0;font-size:13px;color:#6b7280;line-height:1.7;">Pricing, setup time, and how quickly your business can go live</p></td>
+      </tr>
+    </table>
+  </td></tr>
+
+  <!-- PREPARE -->
+  <tr><td style="padding:28px 48px 0;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:20px 22px;">
+      <tr><td>
+        <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#1e40af;">&#128161;&nbsp; Before the Demo</p>
+        <p style="margin:0;font-size:13px;color:#1d4ed8;line-height:1.7;">We will send you the meeting link 30 minutes before the session. No software download is needed — the demo runs entirely in your browser. Feel free to prepare any questions you have about your business or use case.</p>
+      </td></tr>
+    </table>
+  </td></tr>
+
+  <!-- CLOSING -->
+  <tr><td style="padding:28px 48px 36px;">
+    <p style="margin:0 0 16px;font-size:14px;color:#6b7280;line-height:1.8;">If something comes up and you need to reschedule, simply reply to this email and we will find a new time that works for you. We look forward to speaking with you!</p>
+    <p style="margin:0;font-size:14px;color:#374151;font-weight:600;">See you soon,</p>
+    <p style="margin:4px 0 0;font-size:14px;color:#374151;">The VoxDesk Team</p>
+  </td></tr>
+
+  <!-- DIVIDER -->
+  <tr><td style="padding:0 48px;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;"></td></tr>
+
+  <!-- FOOTER -->
+  <tr><td style="padding:24px 48px;text-align:center;">
+    <p style="margin:0;font-size:12px;color:#9ca3af;">This confirmation was sent automatically by <strong>VoxDesk AI Receptionist</strong>.</p>
+    <p style="margin:6px 0 0;font-size:11px;color:#d1d5db;">&#127760;&nbsp; voxdesk.com &nbsp;|&nbsp; Powered by VoxDesk &copy; 2026</p>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>"""
 
         threading.Thread(
             target=send_email,
-            args=(demo.email, "VoxDesk Demo Confirmation", html)
+            args=(demo.email, f"VoxDesk Demo Confirmed — {demo.date} at {demo.time}", html)
         ).start()
 
         return {"success": True, "message": "Demo booked"}
