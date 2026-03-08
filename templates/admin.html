@@ -224,6 +224,32 @@
         <div class="stat-card"><div class="stat-label">This Month</div><div class="stat-value" id="stat-month">—</div><div class="stat-sub">Bookings</div></div>
       </div>
 
+      <!-- TODAY'S APPOINTMENTS -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="card-title">Today's Appointments</div>
+            <div class="live-badge" style="padding:3px 8px;">
+              <div class="live-dot"></div>
+              <div class="live-text">TODAY</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="card-meta" id="today-date-label">—</span>
+            <span class="card-meta" id="today-count-label">— appointments</span>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>ID</th><th>Patient</th><th>Phone</th><th>Doctor</th><th>Time</th><th>Status</th></tr></thead>
+            <tbody id="today-tbody">
+              <tr><td colspan="6"><div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Loading...</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ALL APPOINTMENTS -->
       <div class="card">
         <div class="card-header">
           <div class="card-title">All Appointments</div>
@@ -739,7 +765,51 @@
     });
   }
 
+  function buildToday() {
+    const now = new Date();
+    const todayStr = String(now.getDate()).padStart(2,'0') + '/' +
+                     String(now.getMonth()+1).padStart(2,'0') + '/' +
+                     now.getFullYear();
+
+    document.getElementById('today-date-label').textContent = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+    const rows = document.getElementById('apt-tbody').querySelectorAll('tr');
+    const todayRows = [];
+
+    rows.forEach(row => {
+      const cells = row.querySelectorAll('td');
+      if (cells.length < 8) return;
+      const date = cells[5].textContent.trim();
+      if (date === todayStr) todayRows.push(cells);
+    });
+
+    const tbody = document.getElementById('today-tbody');
+    document.getElementById('today-count-label').textContent = todayRows.length + ' appointment' + (todayRows.length !== 1 ? 's' : '');
+
+    if (todayRows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No appointments today</div></div></td></tr>`;
+      return;
+    }
+
+    // Sort by time
+    todayRows.sort((a,b) => a[6].textContent.trim().localeCompare(b[6].textContent.trim()));
+
+    tbody.innerHTML = todayRows.map(cells => {
+      const status = cells[7].textContent.trim();
+      const badgeClass = status === 'Confirmed' ? 'badge-confirmed' : status === 'Cancelled' ? 'badge-cancelled' : '';
+      return `<tr>
+        <td class="td-mono">${cells[0].textContent.trim()}</td>
+        <td class="td-primary">${cells[1].textContent.trim()}</td>
+        <td class="td-mono">${cells[3].textContent.trim()}</td>
+        <td>${cells[4].textContent.trim()}</td>
+        <td class="td-mono" style="font-weight:700;color:var(--accent);">${cells[6].textContent.trim()}</td>
+        <td><span class="badge ${badgeClass}">${status}</span></td>
+      </tr>`;
+    }).join('');
+  }
+
   processStats();
+  buildToday();
 </script>
 </body>
 </html>
