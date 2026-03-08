@@ -2,14 +2,14 @@ import os
 import uuid
 import pytz
 import psycopg2
-import smtplib
 import threading
 import logging
 import secrets
+import sendgrid
 
+from sendgrid.helpers.mail import Mail
 from contextlib import contextmanager
 from datetime import datetime
-from email.mime.text import MIMEText
 
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse
@@ -33,7 +33,7 @@ logger = logging.getLogger("voxdesk")
 # APP INITIALIZATION
 # -----------------------------
 
-app = FastAPI()  # Swagger hidden in production
+app = FastAPI(docs_url=None, redoc_url=None)  # Swagger hidden in production
 templates = Jinja2Templates(directory="templates")
 security = HTTPBasic()
 
@@ -46,11 +46,6 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 
 @contextmanager
 def get_db():
-    """
-    Context manager for DB connections.
-    Automatically closes the connection even if an error occurs.
-    Usage: with get_db() as (conn, cur):
-    """
     conn = None
     try:
         conn = psycopg2.connect(DATABASE_URL, sslmode="require")
@@ -117,30 +112,25 @@ create_tables()
 
 
 # -----------------------------
-# EMAIL CONFIG
+# EMAIL CONFIG (SendGrid)
 # -----------------------------
 
-EMAIL_ADDRESS = os.environ.get("GMAIL_ADDRESS")
-EMAIL_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD")
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
+FROM_EMAIL = os.environ.get("GMAIL_ADDRESS")
 
 def send_email(to_email: str, subject: str, html: str):
-    """Send HTML email. Logs success or failure — never silently fails."""
     try:
-        msg = MIMEText(html, "html")
-        msg["Subject"] = subject
-        msg["From"] = EMAIL_ADDRESS
-        msg["To"] = to_email
-
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            server.sendmail(EMAIL_ADDRESS, to_email, msg.as_string())
-
-        logger.info(f"Email sent to {to_email} | Subject: {subject}")
-
-    except smtplib.SMTPException as e:
-        logger.error(f"Failed to send email to {to_email}: {e}")
+        sg = sendgrid.SendGridAPIClient(api_key=SENDGRID_API_KEY)
+        message = Mail(
+            from_email=FROM_EMAIL,
+            to_emails=to_email,
+            subject=subject,
+            html_content=html
+        )
+        response = sg.send(message)
+        logger.info(f"Email sent to {to_email} | Status: {response.status_code}")
     except Exception as e:
-        logger.error(f"Unexpected email error: {e}")
+        logger.error(f"Failed to send email to {to_email}: {e}")
 
 
 # -----------------------------
@@ -151,10 +141,6 @@ ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "changeme")
 
 def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
-    """
-    Protects admin routes with a username/password.
-    Set ADMIN_USERNAME and ADMIN_PASSWORD in your Render environment variables.
-    """
     correct_user = secrets.compare_digest(credentials.username, ADMIN_USERNAME)
     correct_pass = secrets.compare_digest(credentials.password, ADMIN_PASSWORD)
 
