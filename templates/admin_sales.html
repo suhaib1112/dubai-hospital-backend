@@ -3,166 +3,207 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VoxDesk Sales Dashboard</title>
+<title>VoxDesk Sales</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   [data-theme="dark"] {
-    --bg: #09090f;
-    --surface: #111118;
-    --surface2: #17171f;
-    --border: #252530;
-    --ink: #f0f0f8;
-    --ink2: #8888a0;
-    --ink3: #50505f;
-    --sidebar-bg: #07070c;
-    --sidebar-border: rgba(255,255,255,0.05);
-    --accent: #f97316;
-    --accent-glow: rgba(249,115,22,0.12);
-    --green: #34d399;
-    --green-bg: rgba(52,211,153,0.1);
-    --red: #f87171;
-    --red-bg: rgba(248,113,113,0.1);
-    --amber: #fbbf24;
-    --amber-bg: rgba(251,191,36,0.1);
-    --blue: #60a5fa;
-    --blue-bg: rgba(96,165,250,0.1);
-    --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 20px rgba(0,0,0,0.3);
+    --bg:#09090f;--surface:#111118;--surface2:#17171f;--border:#252530;
+    --ink:#f0f0f8;--ink2:#8888a0;--ink3:#50505f;
+    --sidebar-bg:#07070c;--sidebar-border:rgba(255,255,255,0.05);
+    --accent:#f97316;--accent-glow:rgba(249,115,22,0.12);
+    --green:#34d399;--green-bg:rgba(52,211,153,0.1);
+    --red:#f87171;--red-bg:rgba(248,113,113,0.1);
+    --amber:#fbbf24;--amber-bg:rgba(251,191,36,0.1);
+    --blue:#60a5fa;--blue-bg:rgba(96,165,250,0.1);
+    --shadow:0 1px 3px rgba(0,0,0,0.4),0 4px 20px rgba(0,0,0,0.3);
+    --modal-bg:rgba(0,0,0,0.75);
   }
-
   [data-theme="light"] {
-    --bg: #faf9f6;
-    --surface: #ffffff;
-    --surface2: #f5f4f0;
-    --border: #e5e3da;
-    --ink: #1a1814;
-    --ink2: #6a6760;
-    --ink3: #9a9890;
-    --sidebar-bg: #1a1814;
-    --sidebar-border: rgba(255,255,255,0.08);
-    --accent: #ea6c00;
-    --accent-glow: rgba(234,108,0,0.1);
-    --green: #1a7a4a;
-    --green-bg: #e8f5ee;
-    --red: #b83232;
-    --red-bg: #faeaea;
-    --amber: #8a6400;
-    --amber-bg: #fef6e0;
-    --blue: #1a4a8a;
-    --blue-bg: #e8eef8;
-    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+    --bg:#faf9f6;--surface:#fff;--surface2:#f5f4f0;--border:#e5e3da;
+    --ink:#1a1814;--ink2:#6a6760;--ink3:#9a9890;
+    --sidebar-bg:#1a1814;--sidebar-border:rgba(255,255,255,0.08);
+    --accent:#ea6c00;--accent-glow:rgba(234,108,0,0.1);
+    --green:#1a7a4a;--green-bg:#e8f5ee;
+    --red:#b83232;--red-bg:#faeaea;
+    --amber:#8a6400;--amber-bg:#fef6e0;
+    --blue:#1a4a8a;--blue-bg:#e8eef8;
+    --shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.04);
+    --modal-bg:rgba(0,0,0,0.4);
   }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg); color: var(--ink); font-family: 'Manrope', sans-serif; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--ink);font-family:'Manrope',sans-serif;min-height:100vh;transition:background 0.3s,color 0.3s;}
 
   /* SIDEBAR */
-  .sidebar { position: fixed; top: 0; left: 0; width: 220px; height: 100vh; background: var(--sidebar-bg); display: flex; flex-direction: column; z-index: 100; border-right: 1px solid var(--sidebar-border); }
-  .logo-wrap { padding: 24px 20px 20px; border-bottom: 1px solid var(--sidebar-border); }
-  .logo { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -0.03em; }
-  .logo span { color: var(--accent); }
-  .logo-sub { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: rgba(255,255,255,0.2); letter-spacing: 0.15em; text-transform: uppercase; margin-top: 3px; }
-  .private-badge { display: inline-flex; align-items: center; gap: 5px; background: var(--accent-glow); border: 1px solid rgba(249,115,22,0.25); border-radius: 4px; padding: 3px 8px; margin-top: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; }
-
-  .nav { padding: 16px 10px; flex: 1; }
-  .nav-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.2); padding: 0 10px; margin-bottom: 6px; margin-top: 14px; }
-  .nav-item { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 7px; cursor: pointer; color: rgba(255,255,255,0.4); font-size: 13px; font-weight: 500; border: none; background: none; width: 100%; text-align: left; transition: all 0.15s; }
-  .nav-item:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.8); }
-  .nav-item.active { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(249,115,22,0.2); }
-  .nav-icon { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.8; }
-  .nav-item.active .nav-icon { opacity: 1; }
-  .nav-count { margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 10px; background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 8px; }
-  .nav-item.active .nav-count { background: var(--accent-glow); color: var(--accent); }
-
-  .sidebar-footer { padding: 14px 20px; border-top: 1px solid var(--sidebar-border); }
-  .sidebar-clock { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.2); }
+  .sidebar{position:fixed;top:0;left:0;width:220px;height:100vh;background:var(--sidebar-bg);display:flex;flex-direction:column;z-index:100;border-right:1px solid var(--sidebar-border);transition:transform 0.3s;}
+  .logo-wrap{padding:24px 20px 20px;border-bottom:1px solid var(--sidebar-border);}
+  .logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.03em;}
+  .logo span{color:var(--accent);}
+  .logo-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:0.15em;text-transform:uppercase;margin-top:3px;}
+  .private-badge{display:inline-flex;align-items:center;gap:5px;background:var(--accent-glow);border:1px solid rgba(249,115,22,0.25);border-radius:4px;padding:3px 8px;margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--accent);letter-spacing:0.1em;text-transform:uppercase;}
+  .nav{padding:16px 10px;flex:1;overflow-y:auto;}
+  .nav-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.2);padding:0 10px;margin-bottom:6px;margin-top:14px;}
+  .nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:7px;cursor:pointer;color:rgba(255,255,255,0.4);font-size:13px;font-weight:500;border:none;background:none;width:100%;text-align:left;transition:all 0.15s;}
+  .nav-item:hover{background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.8);}
+  .nav-item.active{background:var(--accent-glow);color:var(--accent);border:1px solid rgba(249,115,22,0.2);}
+  .nav-icon{width:15px;height:15px;flex-shrink:0;opacity:0.8;}
+  .nav-item.active .nav-icon{opacity:1;}
+  .nav-count{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.3);padding:2px 6px;border-radius:8px;}
+  .nav-item.active .nav-count{background:var(--accent-glow);color:var(--accent);}
+  .sidebar-footer{padding:14px 20px;border-top:1px solid var(--sidebar-border);}
+  .sidebar-clock{font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(255,255,255,0.2);}
 
   /* MAIN */
-  .main { margin-left: 220px; min-height: 100vh; display: flex; flex-direction: column; }
-
-  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; transition: background 0.3s, border-color 0.3s; }
-  .page-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
-  .topbar-right { display: flex; align-items: center; gap: 14px; }
-
-  .private-pill { display: flex; align-items: center; gap: 6px; background: var(--accent-glow); border: 1px solid rgba(249,115,22,0.25); padding: 4px 10px; border-radius: 20px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--accent); }
-
-  .theme-toggle { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 5px; cursor: pointer; display: flex; align-items: center; gap: 2px; }
-  .theme-btn { width: 26px; height: 22px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 12px; transition: all 0.2s; border: none; background: none; cursor: pointer; }
-  .theme-btn.active { background: var(--accent); }
-
-  .topbar-date { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink3); padding-left: 14px; border-left: 1px solid var(--border); }
+  .main{margin-left:220px;min-height:100vh;display:flex;flex-direction:column;}
+  .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;transition:background 0.3s,border-color 0.3s;}
+  .page-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;letter-spacing:-0.01em;}
+  .topbar-right{display:flex;align-items:center;gap:14px;}
+  .private-pill{display:flex;align-items:center;gap:6px;background:var(--accent-glow);border:1px solid rgba(249,115,22,0.25);padding:4px 10px;border-radius:20px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);}
+  .theme-toggle{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px;display:flex;align-items:center;gap:2px;}
+  .theme-btn{width:26px;height:22px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all 0.2s;border:none;background:none;cursor:pointer;}
+  .theme-btn.active{background:var(--accent);}
+  .topbar-date{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink3);padding-left:14px;border-left:1px solid var(--border);}
+  .menu-btn{display:none;background:none;border:none;cursor:pointer;color:var(--ink);padding:6px;}
 
   /* CONTENT */
-  .content { padding: 24px 28px; flex: 1; }
-
-  /* SECTIONS */
-  .section { display: none; animation: fadeUp 0.3s ease both; }
-  .section.active { display: block; }
+  .content{padding:24px 28px;flex:1;}
+  .section{display:none;animation:fadeUp 0.3s ease both;}
+  .section.active{display:block;}
 
   /* STAT CARDS */
-  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
-  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow); animation: fadeUp 0.4s ease both; transition: background 0.3s, border-color 0.3s; position: relative; overflow: hidden; }
-  .stat-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
-  .stat-card:nth-child(1)::after { background: var(--accent); }
-  .stat-card:nth-child(2)::after { background: var(--red); }
-  .stat-card:nth-child(3)::after { background: var(--amber); }
-  .stat-card:nth-child(4)::after { background: var(--green); }
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow);animation:fadeUp 0.4s ease both;transition:background 0.3s,border-color 0.3s;position:relative;overflow:hidden;}
+  .stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+  .stat-card:nth-child(1)::after{background:var(--accent)} .stat-card:nth-child(2)::after{background:var(--red)} .stat-card:nth-child(3)::after{background:var(--amber)} .stat-card:nth-child(4)::after{background:var(--green)}
   .stat-card:nth-child(2){animation-delay:.05s} .stat-card:nth-child(3){animation-delay:.1s} .stat-card:nth-child(4){animation-delay:.15s}
-  .stat-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; }
-  .stat-value { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
-  .stat-card:nth-child(1) .stat-value { color: var(--accent); }
-  .stat-card:nth-child(2) .stat-value { color: var(--red); }
-  .stat-card:nth-child(3) .stat-value { color: var(--amber); }
-  .stat-card:nth-child(4) .stat-value { color: var(--green); }
-  .stat-sub { font-size: 11px; color: var(--ink3); margin-top: 5px; }
+  .stat-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;}
+  .stat-value{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;line-height:1;letter-spacing:-0.03em;}
+  .stat-card:nth-child(1) .stat-value{color:var(--accent)} .stat-card:nth-child(2) .stat-value{color:var(--red)} .stat-card:nth-child(3) .stat-value{color:var(--amber)} .stat-card:nth-child(4) .stat-value{color:var(--green)}
+  .stat-sub{font-size:11px;color:var(--ink3);margin-top:5px;}
 
   /* CHARTS */
-  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
-  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); animation: fadeUp 0.4s 0.15s ease both; transition: background 0.3s, border-color 0.3s; }
-  .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-  .chart-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; }
-  .chart-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ink3); }
-  .chart-wrap { position: relative; height: 180px; }
+  .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:var(--shadow);transition:background 0.3s,border-color 0.3s;}
+  .chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .chart-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;}
+  .chart-meta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);}
+  .chart-wrap{position:relative;height:180px;}
 
   /* TABLE */
-  .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; animation: fadeUp 0.4s 0.2s ease both; transition: background 0.3s, border-color 0.3s; }
-  .table-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface2); transition: background 0.3s; }
-  .table-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; }
+  .table-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;transition:background 0.3s,border-color 0.3s;margin-bottom:20px;}
+  .table-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);transition:background 0.3s;flex-wrap:wrap;gap:10px;}
+  .table-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;}
+  .search-box{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:6px 11px;transition:background 0.3s,border-color 0.3s;}
+  .search-box input{border:none;outline:none;background:none;font-family:'Manrope',sans-serif;font-size:12px;color:var(--ink);width:140px;}
+  .search-box input::placeholder{color:var(--ink3);}
+  table{width:100%;border-collapse:collapse;}
+  thead th{padding:11px 16px;text-align:left;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap;}
+  tbody tr{border-bottom:1px solid var(--border);transition:background 0.1s;}
+  tbody tr:last-child{border-bottom:none;}
+  tbody tr:hover{background:var(--surface2);}
+  tbody td{padding:12px 16px;font-size:13px;color:var(--ink2);white-space:nowrap;}
+  .td-primary{color:var(--ink)!important;font-weight:600;}
+  .td-mono{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink3)!important;}
+  .td-notes{max-width:180px;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--ink3)!important;}
 
-  .search-box { display: flex; align-items: center; gap: 7px; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 6px 11px; transition: background 0.3s, border-color 0.3s; }
-  .search-box input { border: none; outline: none; background: none; font-family: 'Manrope', sans-serif; font-size: 12px; color: var(--ink); width: 160px; }
-  .search-box input::placeholder { color: var(--ink3); }
+  /* BADGES */
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
+  .badge::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+  .badge-hot{background:var(--red-bg);color:var(--red);}.badge-hot::before{background:var(--red);}
+  .badge-warm{background:rgba(251,146,60,0.12);color:#fb923c;}.badge-warm::before{background:#fb923c;}
+  .badge-cold{background:var(--blue-bg);color:var(--blue);}.badge-cold::before{background:var(--blue);}
+  .badge-demo{background:var(--green-bg);color:var(--green);}.badge-demo::before{background:var(--green);}
 
-  table { width: 100%; border-collapse: collapse; }
-  thead th { padding: 11px 16px; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; transition: background 0.3s; }
-  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
-  tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: var(--surface2); }
-  tbody td { padding: 12px 16px; font-size: 13px; color: var(--ink2); white-space: nowrap; }
-  .td-primary { color: var(--ink) !important; font-weight: 600; }
-  .td-mono { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink3) !important; }
-  .td-notes { max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+  /* BUTTONS */
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:7px;font-family:'Manrope',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;}
+  .btn-primary{background:var(--accent);color:#fff;}.btn-primary:hover{opacity:0.85;}
+  .btn-outline{background:transparent;border:1px solid var(--border);color:var(--ink2);}.btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-sm{padding:5px 10px;font-size:11px;}
+  .btn-notes{background:var(--accent-glow);border:1px solid rgba(249,115,22,0.25);color:var(--accent);padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+  .btn-notes:hover{opacity:0.8;}
 
-  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
-  .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
-  .badge-hot { background: var(--red-bg); color: var(--red); } .badge-hot::before { background: var(--red); }
-  .badge-warm { background: rgba(251,146,60,0.12); color: #fb923c; } .badge-warm::before { background: #fb923c; }
-  .badge-cold { background: var(--blue-bg); color: var(--blue); } .badge-cold::before { background: var(--blue); }
-  .badge-demo { background: var(--green-bg); color: var(--green); } .badge-demo::before { background: var(--green); }
+  /* PIPELINE CARDS */
+  .pipeline-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+  .pipeline-col{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .pipeline-col-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .pipeline-col-title{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;}
+  .pipeline-col-count{font-family:'IBM Plex Mono',monospace;font-size:10px;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.3);padding:2px 7px;border-radius:8px;}
+  .pipeline-col-body{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:100px;}
+  .pipeline-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all 0.15s;}
+  .pipeline-card:hover{border-color:var(--accent);transform:translateY(-1px);}
+  .pipeline-card-name{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;}
+  .pipeline-card-meta{font-size:11px;color:var(--ink3);}
+  .pipeline-card-note{font-size:11px;color:var(--ink2);margin-top:6px;font-style:italic;border-left:2px solid var(--accent);padding-left:8px;}
+  .pipeline-empty{text-align:center;padding:20px 10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);}
 
-  .section-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ink3); }
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:var(--modal-bg);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:20px;}
+  .modal-overlay.show{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.4);animation:fadeUp 0.25s ease;}
+  .modal-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px;}
+  .modal-sub{font-size:13px;color:var(--ink3);margin-bottom:20px;}
+  .form-group{margin-bottom:16px;}
+  .form-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);display:block;margin-bottom:6px;}
+  .form-input{width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--ink);font-family:'Manrope',sans-serif;font-size:13px;outline:none;transition:border-color 0.2s;}
+  .form-input:focus{border-color:var(--accent);}
+  textarea.form-input{resize:vertical;min-height:100px;line-height:1.6;}
+  .status-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:6px;}
+  .status-option{padding:10px 14px;border-radius:8px;border:1.5px solid var(--border);cursor:pointer;font-size:13px;font-weight:600;text-align:center;transition:all 0.2s;}
+  .status-option:hover{border-color:var(--accent);}
+  .status-option.selected-cold{border-color:var(--blue);background:var(--blue-bg);color:var(--blue);}
+  .status-option.selected-warm{border-color:#fb923c;background:rgba(251,146,60,0.12);color:#fb923c;}
+  .status-option.selected-hot{border-color:var(--red);background:var(--red-bg);color:var(--red);}
+  .status-option.selected-demo{border-color:var(--green);background:var(--green-bg);color:var(--green);}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
 
-  .empty { text-align: center; padding: 50px; color: var(--ink3); }
-  .empty-icon { font-size: 28px; margin-bottom: 10px; opacity: 0.4; }
-  .empty-text { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  /* TOAST */
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:13px;box-shadow:var(--shadow);z-index:300;display:flex;align-items:center;gap:10px;transform:translateY(80px);opacity:0;transition:all 0.3s;pointer-events:none;}
+  .toast.show{transform:translateY(0);opacity:1;}
 
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  /* EMPTY */
+  .empty{text-align:center;padding:50px;color:var(--ink3);}
+  .empty-icon{font-size:28px;margin-bottom:10px;opacity:0.4;}
+  .empty-text{font-family:'IBM Plex Mono',monospace;font-size:12px;}
+  .section-meta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);}
+
+  /* MOBILE OVERLAY */
+  .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99;}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+  /* ===== RESPONSIVE ===== */
+  @media(max-width:768px){
+    .sidebar{transform:translateX(-100%);}
+    .sidebar.open{transform:translateX(0);}
+    .sidebar-overlay.show{display:block;}
+    .main{margin-left:0;}
+    .topbar{padding:0 16px;}
+    .menu-btn{display:flex;}
+    .topbar-date{display:none;}
+    .private-pill{display:none;}
+    .content{padding:16px;}
+    .stats-row{grid-template-columns:repeat(2,1fr);}
+    .charts-row{grid-template-columns:1fr;}
+    .pipeline-grid{grid-template-columns:repeat(2,1fr);}
+    .table-header{flex-direction:column;align-items:flex-start;}
+    .search-box input{width:120px;}
+    .modal{padding:20px;}
+    .status-grid{grid-template-columns:repeat(2,1fr);}
+  }
+  @media(max-width:480px){
+    .stats-row{grid-template-columns:1fr 1fr;}
+    .pipeline-grid{grid-template-columns:1fr 1fr;}
+    .stat-value{font-size:22px;}
+  }
 </style>
 </head>
 <body>
 
-<aside class="sidebar">
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
   <div class="logo-wrap">
     <div class="logo">Vox<span>Desk</span></div>
     <div class="logo-sub">Sales Console</div>
@@ -170,16 +211,21 @@
   </div>
   <nav class="nav">
     <div class="nav-label">Outbound</div>
-    <button class="nav-item active" onclick="showTab('overview', this)">
+    <button class="nav-item active" onclick="showTab('overview',this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5" opacity="0.5"/><rect x="1" y="9" width="6" height="6" rx="1.5" opacity="0.5"/><rect x="9" y="9" width="6" height="6" rx="1.5" opacity="0.3"/></svg>
       Overview
     </button>
-    <button class="nav-item" onclick="showTab('leads', this)">
+    <button class="nav-item" onclick="showTab('pipeline',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Pipeline
+      <span class="nav-count" id="nav-pipeline-count">—</span>
+    </button>
+    <button class="nav-item" onclick="showTab('leads',this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" fill="currentColor"/><path d="M2 13c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
       Leads
       <span class="nav-count" id="nav-lead-count">—</span>
     </button>
-    <button class="nav-item" onclick="showTab('demos', this)">
+    <button class="nav-item" onclick="showTab('demos',this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 7h6M5 10h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
       Demos
       <span class="nav-count" id="nav-demo-count">—</span>
@@ -192,7 +238,12 @@
 
 <main class="main">
   <div class="topbar">
-    <div class="page-title" id="topbar-title">Outbound Overview</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="menu-btn" onclick="openSidebar()">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+      <div class="page-title" id="topbar-title">Outbound Overview</div>
+    </div>
     <div class="topbar-right">
       <div class="private-pill">🔒 Private</div>
       <div class="theme-toggle">
@@ -208,42 +259,53 @@
     <!-- OVERVIEW -->
     <div class="section active" id="tab-overview">
       <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-label">Total Leads</div>
-          <div class="stat-value" id="stat-total">—</div>
-          <div class="stat-sub">All outbound calls</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Hot Leads</div>
-          <div class="stat-value" id="stat-hot">—</div>
-          <div class="stat-sub">High interest</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Demos Booked</div>
-          <div class="stat-value" id="stat-demos">—</div>
-          <div class="stat-sub">VoxDesk demos</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Conversion</div>
-          <div class="stat-value" id="stat-conv">—</div>
-          <div class="stat-sub">Leads → Demos</div>
-        </div>
+        <div class="stat-card"><div class="stat-label">Total Leads</div><div class="stat-value" id="stat-total">—</div><div class="stat-sub">All outbound calls</div></div>
+        <div class="stat-card"><div class="stat-label">Hot Leads</div><div class="stat-value" id="stat-hot">—</div><div class="stat-sub">High interest</div></div>
+        <div class="stat-card"><div class="stat-label">Demos Booked</div><div class="stat-value" id="stat-demos">—</div><div class="stat-sub">VoxDesk demos</div></div>
+        <div class="stat-card"><div class="stat-label">Conversion</div><div class="stat-value" id="stat-conv">—</div><div class="stat-sub">Leads → Demos</div></div>
       </div>
-
       <div class="charts-row">
         <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title">Lead Interest Breakdown</div>
-            <div class="chart-meta">all time</div>
-          </div>
+          <div class="chart-header"><div class="chart-title">Lead Interest Breakdown</div><div class="chart-meta">all time</div></div>
           <div class="chart-wrap"><canvas id="leadPieChart"></canvas></div>
         </div>
         <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title">Demos Over Time</div>
-            <div class="chart-meta">last 7 months</div>
-          </div>
+          <div class="chart-header"><div class="chart-title">Demos Over Time</div><div class="chart-meta">last 7 months</div></div>
           <div class="chart-wrap"><canvas id="demoLineChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PIPELINE -->
+    <div class="section" id="tab-pipeline">
+      <div class="pipeline-grid">
+        <div class="pipeline-col">
+          <div class="pipeline-col-header">
+            <div class="pipeline-col-title" style="color:var(--blue);">🧊 Cold</div>
+            <div class="pipeline-col-count" id="pipe-cold-count">0</div>
+          </div>
+          <div class="pipeline-col-body" id="pipe-cold"></div>
+        </div>
+        <div class="pipeline-col">
+          <div class="pipeline-col-header">
+            <div class="pipeline-col-title" style="color:#fb923c;">🔥 Warm</div>
+            <div class="pipeline-col-count" id="pipe-warm-count">0</div>
+          </div>
+          <div class="pipeline-col-body" id="pipe-warm"></div>
+        </div>
+        <div class="pipeline-col">
+          <div class="pipeline-col-header">
+            <div class="pipeline-col-title" style="color:var(--red);">🚀 Hot</div>
+            <div class="pipeline-col-count" id="pipe-hot-count">0</div>
+          </div>
+          <div class="pipeline-col-body" id="pipe-hot"></div>
+        </div>
+        <div class="pipeline-col">
+          <div class="pipeline-col-header">
+            <div class="pipeline-col-title" style="color:var(--green);">✅ Demo Booked</div>
+            <div class="pipeline-col-count" id="pipe-demo-count">0</div>
+          </div>
+          <div class="pipeline-col-body" id="pipe-demo"></div>
         </div>
       </div>
     </div>
@@ -253,19 +315,19 @@
       <div class="table-card">
         <div class="table-header">
           <div class="table-title">All Leads</div>
-          <div style="display:flex;align-items:center;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <div class="search-box">
               <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#9c9a94" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="#9c9a94" stroke-width="1.5" stroke-linecap="round"/></svg>
-              <input type="text" placeholder="Search leads..." oninput="filterTable('leads-tbody', this.value)">
+              <input type="text" placeholder="Search leads..." oninput="filterTable('leads-tbody',this.value)">
             </div>
             <div class="section-meta" id="leads-count-label">— records</div>
           </div>
         </div>
         <div style="overflow-x:auto;">
           <table>
-            <thead><tr><th>ID</th><th>Business</th><th>Owner</th><th>Phone</th><th>Interest</th><th>Notes</th><th>Date</th></tr></thead>
+            <thead><tr><th>ID</th><th>Business</th><th>Owner</th><th>Phone</th><th>Status</th><th>Notes Preview</th><th>Date</th><th>Actions</th></tr></thead>
             <tbody id="leads-tbody">
-              <tr><td colspan="7"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></td></tr>
+              <tr><td colspan="8"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -280,7 +342,7 @@
           <div style="display:flex;align-items:center;gap:10px;">
             <div class="search-box">
               <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#9c9a94" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="#9c9a94" stroke-width="1.5" stroke-linecap="round"/></svg>
-              <input type="text" placeholder="Search demos..." oninput="filterTable('demos-tbody', this.value)">
+              <input type="text" placeholder="Search demos..." oninput="filterTable('demos-tbody',this.value)">
             </div>
             <div class="section-meta" id="demos-count-label">— records</div>
           </div>
@@ -299,8 +361,55 @@
   </div>
 </main>
 
+<!-- NOTES MODAL -->
+<div class="modal-overlay" id="notes-modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-biz-name">Edit Lead</div>
+    <div class="modal-sub" id="modal-biz-sub">Update status and add demo prep notes</div>
+
+    <div class="form-group">
+      <label class="form-label">Lead Status</label>
+      <div class="status-grid">
+        <div class="status-option" id="opt-cold" onclick="selectStatus('cold')">🧊 Cold</div>
+        <div class="status-option" id="opt-warm" onclick="selectStatus('warm')">🔥 Warm</div>
+        <div class="status-option" id="opt-hot" onclick="selectStatus('hot')">🚀 Hot</div>
+        <div class="status-option" id="opt-demo" onclick="selectStatus('demo')">✅ Demo Booked</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Demo Prep Notes</label>
+      <textarea class="form-input" id="modal-notes" placeholder="e.g. Customer is frustrated with missed calls from walk-ins. Pitch the 24/7 answering angle. Mention the auto-booking feature. They use Calendly currently..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Pain Points</label>
+      <input class="form-input" id="modal-pain" type="text" placeholder="e.g. Loses 5+ calls daily, no after-hours coverage">
+    </div>
+
+    <input type="hidden" id="modal-lead-id">
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNotes()">💾 Save Notes</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
 <script>
-  // Theme
+  // ===== MOBILE SIDEBAR =====
+  function openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebar-overlay').classList.add('show');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('show');
+  }
+
+  // ===== THEME =====
   function setTheme(t) {
     document.documentElement.setAttribute('data-theme', t);
     localStorage.setItem('vd-sales-theme', t);
@@ -310,21 +419,22 @@
   }
   setTheme(localStorage.getItem('vd-sales-theme') || 'dark');
 
-  // Clock
+  // ===== CLOCK =====
   setInterval(() => {
     const now = new Date();
     document.getElementById('topbar-date').textContent = now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
     document.getElementById('sidebar-clock').textContent = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
   }, 1000);
 
-  // Tabs
+  // ===== TABS =====
+  const tabTitles = { overview:'Outbound Overview', pipeline:'Sales Pipeline', leads:'All Leads', demos:'Booked Demos' };
   function showTab(tab, btn) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.getElementById('tab-' + tab).classList.add('active');
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    document.getElementById('tab-'+tab).classList.add('active');
     btn.classList.add('active');
-    const titles = { overview:'Outbound Overview', leads:'All Leads', demos:'Booked Demos' };
-    document.getElementById('topbar-title').textContent = titles[tab];
+    document.getElementById('topbar-title').textContent = tabTitles[tab];
+    closeSidebar();
   }
 
   function filterTable(id, q) {
@@ -333,24 +443,89 @@
     });
   }
 
+  // ===== TOAST =====
+  function showToast(msg, type='success') {
+    const t = document.getElementById('toast');
+    t.textContent = (type==='success'?'✓ ':'✗ ') + msg;
+    t.className = `toast show`;
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // ===== BADGES =====
   function interestBadge(l) {
     l = (l||'').toLowerCase();
-    if (l==='hot') return `<span class="badge badge-hot">Hot</span>`;
-    if (l==='warm') return `<span class="badge badge-warm">Warm</span>`;
-    if (l==='cold') return `<span class="badge badge-cold">Cold</span>`;
+    if (l==='hot') return `<span class="badge badge-hot">🚀 Hot</span>`;
+    if (l==='warm') return `<span class="badge badge-warm">🔥 Warm</span>`;
+    if (l==='cold') return `<span class="badge badge-cold">🧊 Cold</span>`;
+    if (l==='demo') return `<span class="badge badge-demo">✅ Demo Booked</span>`;
     return `<span class="badge">${l||'—'}</span>`;
   }
 
+  // ===== LOCAL NOTES STORAGE =====
+  function getLocalNotes(leadId) {
+    try { return JSON.parse(localStorage.getItem('vd-notes-'+leadId) || '{}'); } catch { return {}; }
+  }
+  function saveLocalNotes(leadId, data) {
+    localStorage.setItem('vd-notes-'+leadId, JSON.stringify(data));
+  }
+
+  // ===== MODAL =====
+  let currentLeadId = null;
+  let selectedStatus = '';
+
+  function openNotes(leadId, bizName, phone) {
+    currentLeadId = leadId;
+    const saved = getLocalNotes(leadId);
+    document.getElementById('modal-lead-id').value = leadId;
+    document.getElementById('modal-biz-name').textContent = bizName;
+    document.getElementById('modal-biz-sub').textContent = phone + ' · Update status and demo prep notes';
+    document.getElementById('modal-notes').value = saved.notes || '';
+    document.getElementById('modal-pain').value = saved.pain || '';
+    selectStatus(saved.status || '');
+    document.getElementById('notes-modal').classList.add('show');
+  }
+
+  function selectStatus(s) {
+    selectedStatus = s;
+    ['cold','warm','hot','demo'].forEach(opt => {
+      const el = document.getElementById('opt-'+opt);
+      el.className = 'status-option';
+      if (opt === s) el.classList.add('selected-'+opt);
+    });
+  }
+
+  function closeModal() {
+    document.getElementById('notes-modal').classList.remove('show');
+    currentLeadId = null;
+  }
+
+  document.getElementById('notes-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('notes-modal')) closeModal();
+  });
+
+  function saveNotes() {
+    if (!currentLeadId) return;
+    const data = {
+      status: selectedStatus,
+      notes: document.getElementById('modal-notes').value,
+      pain: document.getElementById('modal-pain').value,
+    };
+    saveLocalNotes(currentLeadId, data);
+    closeModal();
+    showToast('Notes saved!');
+    renderLeads();
+    buildPipeline();
+  }
+
+  // ===== CHARTS =====
   function getColors() {
     const dark = document.documentElement.getAttribute('data-theme')==='dark';
     return {
-      accent: dark ? '#f97316' : '#ea6c00',
-      green: dark ? '#34d399' : '#1a7a4a',
-      red: dark ? '#f87171' : '#b83232',
-      amber: dark ? '#fbbf24' : '#d97706',
-      blue: dark ? '#60a5fa' : '#1a4a8a',
-      grid: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)',
-      text: dark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.35)',
+      accent: dark?'#f97316':'#ea6c00', green: dark?'#34d399':'#1a7a4a',
+      red: dark?'#f87171':'#b83232', amber: dark?'#fbbf24':'#d97706',
+      blue: dark?'#60a5fa':'#1a4a8a',
+      grid: dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.06)',
+      text: dark?'rgba(255,255,255,0.3)':'rgba(0,0,0,0.35)',
     };
   }
 
@@ -359,28 +534,22 @@
 
   function buildCharts() {
     const c = getColors();
-
-    // PIE
     const hot = leadsData.filter(r=>(r[4]||'').toLowerCase()==='hot').length;
     const warm = leadsData.filter(r=>(r[4]||'').toLowerCase()==='warm').length;
     const cold = leadsData.filter(r=>(r[4]||'').toLowerCase()==='cold').length;
 
     if (pieInst) pieInst.destroy();
     pieInst = new Chart(document.getElementById('leadPieChart').getContext('2d'), {
-      type: 'doughnut',
-      data: {
-        labels: ['Hot', 'Warm', 'Cold'],
-        datasets: [{ data: [hot, warm, cold], backgroundColor: [c.red+'cc', c.amber+'cc', c.blue+'cc'], borderColor: [c.red, c.amber, c.blue], borderWidth: 1.5, hoverOffset: 6 }]
-      },
-      options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position:'bottom', labels: { color: c.text, font: { family:'IBM Plex Mono', size:10 }, padding:12, boxWidth:10 } } } }
+      type:'doughnut',
+      data:{ labels:['Hot','Warm','Cold'], datasets:[{data:[hot,warm,cold],backgroundColor:[c.red+'cc',c.amber+'cc',c.blue+'cc'],borderColor:[c.red,c.amber,c.blue],borderWidth:1.5,hoverOffset:6}] },
+      options:{ responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{color:c.text,font:{family:'IBM Plex Mono',size:10},padding:12,boxWidth:10}}} }
     });
 
-    // LINE
     const monthCounts = {};
     const now = new Date();
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      monthCounts[d.toLocaleString('en-US',{month:'short',year:'2-digit'})] = 0;
+    for (let i=6;i>=0;i--) {
+      const d = new Date(now.getFullYear(),now.getMonth()-i,1);
+      monthCounts[d.toLocaleString('en-US',{month:'short',year:'2-digit'})]=0;
     }
     demosData.forEach(r => {
       if (!r[5]) return;
@@ -390,19 +559,71 @@
 
     const ctx2 = document.getElementById('demoLineChart').getContext('2d');
     const grad = ctx2.createLinearGradient(0,0,0,180);
-    grad.addColorStop(0, c.accent+'40');
-    grad.addColorStop(1, c.accent+'00');
+    grad.addColorStop(0, c.accent+'40'); grad.addColorStop(1, c.accent+'00');
     if (lineInst) lineInst.destroy();
     lineInst = new Chart(ctx2, {
-      type: 'line',
-      data: { labels: Object.keys(monthCounts), datasets: [{ data: Object.values(monthCounts), borderColor: c.accent, backgroundColor: grad, borderWidth: 2, pointRadius: 3, pointBackgroundColor: c.accent, fill: true, tension: 0.4 }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: {
-        x: { grid: { color: c.grid }, ticks: { color: c.text, font: { family:'IBM Plex Mono', size:10 } } },
-        y: { grid: { color: c.grid }, ticks: { color: c.text, font: { family:'IBM Plex Mono', size:10 }, stepSize:1 }, beginAtZero: true }
-      }}
+      type:'line',
+      data:{ labels:Object.keys(monthCounts), datasets:[{data:Object.values(monthCounts),borderColor:c.accent,backgroundColor:grad,borderWidth:2,pointRadius:3,pointBackgroundColor:c.accent,fill:true,tension:0.4}] },
+      options:{ responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:c.grid},ticks:{color:c.text,font:{family:'IBM Plex Mono',size:10}}},y:{grid:{color:c.grid},ticks:{color:c.text,font:{family:'IBM Plex Mono',size:10},stepSize:1},beginAtZero:true}} }
     });
   }
 
+  // ===== PIPELINE =====
+  function buildPipeline() {
+    const cols = { cold:[], warm:[], hot:[], demo:[] };
+
+    leadsData.forEach(r => {
+      const saved = getLocalNotes(r[0]);
+      const status = (saved.status || r[4] || 'cold').toLowerCase();
+      const key = status === 'demo' ? 'demo' : (cols[status] !== undefined ? status : 'cold');
+      cols[key].push({ id:r[0], biz:r[1], owner:r[2], phone:r[3], notes:saved.notes||'', pain:saved.pain||'' });
+    });
+
+    const total = leadsData.length;
+    document.getElementById('nav-pipeline-count').textContent = total;
+
+    ['cold','warm','hot','demo'].forEach(col => {
+      const body = document.getElementById('pipe-'+col);
+      const count = document.getElementById('pipe-'+col+'-count');
+      count.textContent = cols[col].length;
+      if (cols[col].length === 0) {
+        body.innerHTML = `<div class="pipeline-empty">No leads here</div>`;
+        return;
+      }
+      body.innerHTML = cols[col].map(lead => `
+        <div class="pipeline-card" onclick="openNotes('${lead.id}','${lead.biz}','${lead.phone}')">
+          <div class="pipeline-card-name">${lead.biz}</div>
+          <div class="pipeline-card-meta">${lead.owner} · ${lead.phone}</div>
+          ${lead.notes ? `<div class="pipeline-card-note">${lead.notes.slice(0,80)}${lead.notes.length>80?'...':''}</div>` : ''}
+        </div>`).join('');
+    });
+  }
+
+  // ===== RENDER LEADS =====
+  function renderLeads() {
+    const tbody = document.getElementById('leads-tbody');
+    if (!leadsData.length) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No leads yet</div></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = leadsData.map(r => {
+      const saved = getLocalNotes(r[0]);
+      const status = saved.status || r[4] || '';
+      const notesPreview = saved.notes ? saved.notes.slice(0,50)+(saved.notes.length>50?'...':'') : '—';
+      return `<tr>
+        <td class="td-mono">${r[0]}</td>
+        <td class="td-primary">${r[1]}</td>
+        <td>${r[2]}</td>
+        <td class="td-mono">${r[3]}</td>
+        <td>${interestBadge(status)}</td>
+        <td class="td-notes" title="${saved.notes||''}">${notesPreview}</td>
+        <td class="td-mono">${r[6] ? new Date(r[6]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}</td>
+        <td><button class="btn-notes" onclick="openNotes('${r[0]}','${r[1]}','${r[3]}')">✏️ Notes</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ===== LOAD DATA =====
   async function loadLeads() {
     try {
       const res = await fetch('/admin-leads');
@@ -416,20 +637,10 @@
       const hot = leadsData.filter(r=>(r[4]||'').toLowerCase()==='hot').length;
       document.getElementById('stat-hot').textContent = hot;
 
-      const tbody = document.getElementById('leads-tbody');
-      if (!leadsData.length) { tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No leads yet</div></div></td></tr>`; return; }
-      tbody.innerHTML = leadsData.map(r => `
-        <tr>
-          <td class="td-mono">${r[0]}</td>
-          <td class="td-primary">${r[1]}</td>
-          <td>${r[2]}</td>
-          <td class="td-mono">${r[3]}</td>
-          <td>${interestBadge(r[4])}</td>
-          <td class="td-notes">${r[5]||'—'}</td>
-          <td class="td-mono">${r[6] ? new Date(r[6]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}</td>
-        </tr>`).join('');
+      renderLeads();
+      buildPipeline();
     } catch(e) {
-      document.getElementById('leads-tbody').innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load</div></div></td></tr>`;
+      document.getElementById('leads-tbody').innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load</div></div></td></tr>`;
     }
   }
 
@@ -443,21 +654,23 @@
       document.getElementById('stat-demos').textContent = demosData.length;
       document.getElementById('demos-count-label').textContent = demosData.length + ' records';
 
-      const conv = leadsData.length > 0 ? Math.round((demosData.length / leadsData.length) * 100) + '%' : '—';
+      const conv = leadsData.length > 0 ? Math.round((demosData.length/leadsData.length)*100)+'%' : '—';
       document.getElementById('stat-conv').textContent = conv;
 
       const tbody = document.getElementById('demos-tbody');
-      if (!demosData.length) { tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No demos booked yet</div></div></td></tr>`; return; }
-      tbody.innerHTML = demosData.map(r => `
-        <tr>
-          <td class="td-mono">${r[0]}</td>
-          <td class="td-primary">${r[1]}</td>
-          <td>${r[2]}</td>
-          <td class="td-mono">${r[3]}</td>
-          <td class="td-mono">${r[4]}</td>
-          <td class="td-mono">${r[5] ? new Date(r[5]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}</td>
-        </tr>`).join('');
-
+      if (!demosData.length) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No demos booked yet</div></div></td></tr>`;
+      } else {
+        tbody.innerHTML = demosData.map(r => `
+          <tr>
+            <td class="td-mono">${r[0]}</td>
+            <td class="td-primary">${r[1]}</td>
+            <td>${r[2]}</td>
+            <td class="td-mono">${r[3]}</td>
+            <td class="td-mono">${r[4]}</td>
+            <td class="td-mono">${r[5] ? new Date(r[5]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}</td>
+          </tr>`).join('');
+      }
       buildCharts();
     } catch(e) {
       document.getElementById('demos-tbody').innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load</div></div></td></tr>`;
