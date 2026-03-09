@@ -86,10 +86,24 @@ def create_tables():
                 owner_name VARCHAR(150),
                 phone VARCHAR(30),
                 interest_level VARCHAR(20),
+                mood VARCHAR(50),
+                pain_points TEXT,
+                roi_reaction VARCHAR(100),
+                objection VARCHAR(100),
                 notes TEXT,
                 created_at TIMESTAMP
             );
             """)
+            for col, coltype in [
+                ("mood", "VARCHAR(50)"),
+                ("pain_points", "TEXT"),
+                ("roi_reaction", "VARCHAR(100)"),
+                ("objection", "VARCHAR(100)"),
+            ]:
+                try:
+                    cur.execute(f"ALTER TABLE leads ADD COLUMN IF NOT EXISTS {col} {coltype};")
+                except Exception:
+                    pass
 
             cur.execute("""
             CREATE TABLE IF NOT EXISTS demos (
@@ -181,8 +195,12 @@ class Lead(BaseModel):
     business_name: str
     owner_name: str
     phone: str
-    interest_level: str
-    notes: str
+    interest_level: str       # cold / warm / hot / demo
+    mood: str = ""            # excited / curious / skeptical / confused
+    pain_points: str = ""     # what they said is frustrating them
+    roi_reaction: str = ""    # shocked / loved it / didn't believe it / neutral
+    objection: str = ""       # price / has receptionist / not interested / none
+    notes: str = ""           # any extra notes from Alex
 
 
 class Demo(BaseModel):
@@ -463,19 +481,23 @@ def save_lead(lead: Lead):
             lead_id = "LD" + str(uuid.uuid4())[:6].upper()
 
             cur.execute("""
-                INSERT INTO leads VALUES (%s,%s,%s,%s,%s,%s,%s)
+                INSERT INTO leads VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """, (
                 lead_id,
                 lead.business_name,
                 lead.owner_name,
                 lead.phone,
                 lead.interest_level,
+                lead.mood,
+                lead.pain_points,
+                lead.roi_reaction,
+                lead.objection,
                 lead.notes,
                 datetime.utcnow()
             ))
 
             conn.commit()
-            logger.info(f"Lead saved: {lead_id} | {lead.business_name}")
+            logger.info(f"Lead saved: {lead_id} | {lead.business_name} | {lead.interest_level} | {lead.mood}")
 
         return {"success": True, "message": "Lead saved"}
 
@@ -678,7 +700,19 @@ def admin_leads(username: str = Depends(verify_admin)):
             rows = cur.fetchall()
 
         return {"leads": [
-            [r[0], r[1], r[2], r[3], r[4], r[5], r[6].isoformat() if r[6] else None]
+            {
+                "id": r[0],
+                "business_name": r[1],
+                "owner_name": r[2],
+                "phone": r[3],
+                "interest_level": r[4],
+                "mood": r[5] or "",
+                "pain_points": r[6] or "",
+                "roi_reaction": r[7] or "",
+                "objection": r[8] or "",
+                "notes": r[9] or "",
+                "created_at": r[10].isoformat() if r[10] else None
+            }
             for r in rows
         ]}
 

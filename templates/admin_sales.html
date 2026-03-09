@@ -325,7 +325,7 @@
         </div>
         <div style="overflow-x:auto;">
           <table>
-            <thead><tr><th>ID</th><th>Business</th><th>Owner</th><th>Phone</th><th>Status</th><th>Notes Preview</th><th>Date</th><th>Actions</th></tr></thead>
+            <thead><tr><th>ID</th><th>Business</th><th>Owner</th><th>Phone</th><th>Status</th><th>Mood</th><th>Pain Point</th><th>Notes</th><th>Actions</th></tr></thead>
             <tbody id="leads-tbody">
               <tr><td colspan="8"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></td></tr>
             </tbody>
@@ -534,9 +534,9 @@
 
   function buildCharts() {
     const c = getColors();
-    const hot = leadsData.filter(r=>(r[4]||'').toLowerCase()==='hot').length;
-    const warm = leadsData.filter(r=>(r[4]||'').toLowerCase()==='warm').length;
-    const cold = leadsData.filter(r=>(r[4]||'').toLowerCase()==='cold').length;
+    const hot = leadsData.filter(r=>(r.interest_level||'').toLowerCase()==='hot').length;
+    const warm = leadsData.filter(r=>(r.interest_level||'').toLowerCase()==='warm').length;
+    const cold = leadsData.filter(r=>(r.interest_level||'').toLowerCase()==='cold').length;
 
     if (pieInst) pieInst.destroy();
     pieInst = new Chart(document.getElementById('leadPieChart').getContext('2d'), {
@@ -573,10 +573,10 @@
     const cols = { cold:[], warm:[], hot:[], demo:[] };
 
     leadsData.forEach(r => {
-      const saved = getLocalNotes(r[0]);
-      const status = (saved.status || r[4] || 'cold').toLowerCase();
+      const saved = getLocalNotes(r.id);
+      const status = (saved.status || r.interest_level || 'cold').toLowerCase();
       const key = status === 'demo' ? 'demo' : (cols[status] !== undefined ? status : 'cold');
-      cols[key].push({ id:r[0], biz:r[1], owner:r[2], phone:r[3], notes:saved.notes||'', pain:saved.pain||'' });
+      cols[key].push({ id:r.id, biz:r.business_name, owner:r.owner_name, phone:r.phone, mood:r.mood||'', pain:r.pain_points||'', notes:saved.notes||r.notes||'' });
     });
 
     const total = leadsData.length;
@@ -593,32 +593,40 @@
       body.innerHTML = cols[col].map(lead => `
         <div class="pipeline-card" onclick="openNotes('${lead.id}','${lead.biz}','${lead.phone}')">
           <div class="pipeline-card-name">${lead.biz}</div>
-          <div class="pipeline-card-meta">${lead.owner} · ${lead.phone}</div>
-          ${lead.notes ? `<div class="pipeline-card-note">${lead.notes.slice(0,80)}${lead.notes.length>80?'...':''}</div>` : ''}
+          <div class="pipeline-card-meta">${lead.owner} · ${moodEmoji(lead.mood)} ${lead.mood||'No mood data'}</div>
+          ${lead.pain ? `<div class="pipeline-card-note">${lead.pain.slice(0,80)}${lead.pain.length>80?'...':''}</div>` : ''}
         </div>`).join('');
     });
   }
 
   // ===== RENDER LEADS =====
+  function moodEmoji(m) {
+    const map = { excited:'🤩', curious:'🤔', skeptical:'😒', confused:'😕', neutral:'😐' };
+    return map[(m||'').toLowerCase()] || '';
+  }
+
   function renderLeads() {
     const tbody = document.getElementById('leads-tbody');
     if (!leadsData.length) {
-      tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No leads yet</div></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No leads yet</div></div></td></tr>`;
       return;
     }
     tbody.innerHTML = leadsData.map(r => {
-      const saved = getLocalNotes(r[0]);
-      const status = saved.status || r[4] || '';
-      const notesPreview = saved.notes ? saved.notes.slice(0,50)+(saved.notes.length>50?'...':'') : '—';
+      const saved = getLocalNotes(r.id);
+      const status = saved.status || r.interest_level || '';
+      const mood = r.mood || '';
+      const pain = r.pain_points ? r.pain_points.slice(0,40)+(r.pain_points.length>40?'...':'') : '—';
+      const notesPreview = (saved.notes || r.notes) ? (saved.notes||r.notes).slice(0,40)+((saved.notes||r.notes).length>40?'...':'') : '—';
       return `<tr>
-        <td class="td-mono">${r[0]}</td>
-        <td class="td-primary">${r[1]}</td>
-        <td>${r[2]}</td>
-        <td class="td-mono">${r[3]}</td>
+        <td class="td-mono">${r.id}</td>
+        <td class="td-primary">${r.business_name}</td>
+        <td>${r.owner_name}</td>
+        <td class="td-mono">${r.phone}</td>
         <td>${interestBadge(status)}</td>
-        <td class="td-notes" title="${saved.notes||''}">${notesPreview}</td>
-        <td class="td-mono">${r[6] ? new Date(r[6]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}</td>
-        <td><button class="btn-notes" onclick="openNotes('${r[0]}','${r[1]}','${r[3]}')">✏️ Notes</button></td>
+        <td style="font-size:13px;">${moodEmoji(mood)} ${mood||'—'}</td>
+        <td class="td-notes" title="${r.pain_points||''}">${pain}</td>
+        <td class="td-notes" title="${saved.notes||r.notes||''}">${notesPreview}</td>
+        <td><button class="btn-notes" onclick="openNotes('${r.id}','${r.business_name}','${r.phone}')">✏️ Notes</button></td>
       </tr>`;
     }).join('');
   }
@@ -634,13 +642,13 @@
       document.getElementById('stat-total').textContent = leadsData.length;
       document.getElementById('leads-count-label').textContent = leadsData.length + ' records';
 
-      const hot = leadsData.filter(r=>(r[4]||'').toLowerCase()==='hot').length;
+      const hot = leadsData.filter(r=>(r.interest_level||'').toLowerCase()==='hot').length;
       document.getElementById('stat-hot').textContent = hot;
 
       renderLeads();
       buildPipeline();
     } catch(e) {
-      document.getElementById('leads-tbody').innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load</div></div></td></tr>`;
+      document.getElementById('leads-tbody').innerHTML = `<tr><td colspan="9"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load</div></div></td></tr>`;
     }
   }
 
