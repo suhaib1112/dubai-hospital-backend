@@ -608,17 +608,7 @@
   let currentLeadId = null;
   let selectedStatus = '';
 
-  function openNotes(leadId, bizName, phone) {
-    currentLeadId = leadId;
-    const saved = getLocalNotes(leadId);
-    document.getElementById('modal-lead-id').value = leadId;
-    document.getElementById('modal-biz-name').textContent = bizName;
-    document.getElementById('modal-biz-sub').textContent = phone + ' · Update status and demo prep notes';
-    document.getElementById('modal-notes').value = saved.notes || '';
-    document.getElementById('modal-pain').value = saved.pain || '';
-    selectStatus(saved.status || '');
-    document.getElementById('notes-modal').classList.add('show');
-  }
+
 
   function selectStatus(s) {
     selectedStatus = s;
@@ -638,19 +628,7 @@
     if (e.target === document.getElementById('notes-modal')) closeModal();
   });
 
-  function saveNotes() {
-    if (!currentLeadId) return;
-    const data = {
-      status: selectedStatus,
-      notes: document.getElementById('modal-notes').value,
-      pain: document.getElementById('modal-pain').value,
-    };
-    saveLocalNotes(currentLeadId, data);
-    closeModal();
-    showToast('Notes saved!');
-    renderLeads();
-    buildPipeline();
-  }
+
 
   // ===== CHARTS =====
   function getColors() {
@@ -666,6 +644,12 @@
 
   let pieInst, lineInst;
   let leadsData = [], demosData = [];
+
+
+  function moodEmoji(m) {
+    const map = { excited:'🤩', curious:'🤔', skeptical:'😒', confused:'😕', neutral:'😐' };
+    return map[(m||'').toLowerCase()] || '';
+  }
 
   function buildCharts() {
     const c = getColors();
@@ -735,31 +719,7 @@
   }
 
   // ===== RENDER LEADS =====
-  function renderLeads() {
-    const tbody = document.getElementById('leads-tbody');
-    if (!leadsData.length) {
-      tbody.innerHTML = `<tr><td colspan="9"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No leads yet</div></div></td></tr>`;
-      return;
-    }
-    tbody.innerHTML = leadsData.map(r => {
-      const saved = getLocalNotes(r.id);
-      const status = saved.status || r.interest_level || '';
-      const mood = r.mood || '';
-      const pain = r.pain_points ? r.pain_points.slice(0,40)+(r.pain_points.length>40?'...':'') : '—';
-      const notesPreview = (saved.notes || r.notes) ? (saved.notes||r.notes).slice(0,40)+((saved.notes||r.notes).length>40?'...':'') : '—';
-      return `<tr>
-        <td class="td-mono">${r.id}</td>
-        <td class="td-primary">${r.business_name}</td>
-        <td>${r.owner_name}</td>
-        <td class="td-mono">${r.phone}</td>
-        <td>${interestBadge(status)}</td>
-        <td style="font-size:13px;">${moodEmoji(mood)} ${mood||'—'}</td>
-        <td class="td-notes" title="${r.pain_points||''}">${pain}</td>
-        <td class="td-notes" title="${saved.notes||r.notes||''}">${notesPreview}</td>
-        <td><button class="btn-notes" onclick="openNotes('${r.id}','${r.business_name}','${r.phone}')">✏️ Notes</button></td>
-      </tr>`;
-    }).join('');
-  }
+
 
   // ===== LOAD DATA =====
   async function loadLeads() {
