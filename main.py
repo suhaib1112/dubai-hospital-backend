@@ -528,10 +528,58 @@ def save_lead(lead: Lead):
 # BOOK DEMO
 # -----------------------------
 
+@app.get("/check-slot")
+def check_slot(date: str, time: str):
+    """Check if a time slot is already booked"""
+    try:
+        with get_db() as (conn, cur):
+            cur.execute("""
+                SELECT COUNT(*) FROM demos WHERE date = %s AND time = %s
+            """, (date, time))
+            count = cur.fetchone()[0]
+        if count > 0:
+            # Find next available slots on that day
+            cur2_conn = None
+            with get_db() as (conn2, cur2):
+                cur2.execute("""
+                    SELECT time FROM demos WHERE date = %s ORDER BY time
+                """, (date,))
+                booked_times = [r[0] for r in cur2.fetchall()]
+            return {
+                "available": False,
+                "message": f"Sorry, {time} on {date} is already booked.",
+                "booked_times": booked_times
+            }
+        return {"available": True, "message": "Slot is available"}
+    except Exception as e:
+        logger.error(f"Error checking slot: {e}")
+        return {"available": True, "message": "Slot check failed, proceeding"}
+
+
 @app.post("/book-demo")
 def book_demo(demo: Demo):
     try:
         with get_db() as (conn, cur):
+
+            # DOUBLE BOOKING PROTECTION
+            cur.execute("""
+                SELECT COUNT(*) FROM demos WHERE date = %s AND time = %s
+            """, (demo.date, demo.time))
+            already_booked = cur.fetchone()[0]
+
+            if already_booked > 0:
+                # Find other booked times on that day to suggest alternatives
+                cur.execute("""
+                    SELECT time FROM demos WHERE date = %s ORDER BY time
+                """, (demo.date,))
+                booked_times = [r[0] for r in cur.fetchall()]
+                logger.warning(f"Double booking attempt: {demo.date} at {demo.time} by {demo.name}")
+                return {
+                    "success": False,
+                    "message": f"That time slot is already taken. The following times are booked on {demo.date}: {', '.join(booked_times)}. Please choose a different time.",
+                    "already_booked": True,
+                    "booked_times": booked_times
+                }
 
             demo_id = "DM" + str(uuid.uuid4())[:6].upper()
 
@@ -549,6 +597,8 @@ def book_demo(demo: Demo):
             conn.commit()
             logger.info(f"Demo booked: {demo_id} | {demo.name} | {demo.email}")
 
+        GOOGLE_MEET_LINK = os.environ.get("GOOGLE_MEET_LINK", "https://meet.google.com/voxdesk-demo")
+
         html = f"""<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
@@ -563,15 +613,15 @@ def book_demo(demo: Demo):
     <p style="margin:6px 0 0;font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:3px;text-transform:uppercase;">AI Receptionist</p>
   </td></tr>
 
-  <!-- BLUE BANNER -->
-  <tr><td style="background:#dbeafe;padding:18px 48px;text-align:center;">
-    <p style="margin:0;font-size:16px;font-weight:700;color:#1e40af;">&#128197;&nbsp; Your Demo is Scheduled</p>
+  <!-- GREEN BANNER -->
+  <tr><td style="background:#dcfce7;padding:18px 48px;text-align:center;">
+    <p style="margin:0;font-size:16px;font-weight:700;color:#166534;">&#9989;&nbsp; Your Demo is Confirmed — You are All Set!</p>
   </td></tr>
 
   <!-- GREETING -->
   <tr><td style="padding:40px 48px 0;">
     <p style="margin:0 0 12px;font-size:16px;font-weight:600;color:#111827;">Hi {demo.name},</p>
-    <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.8;">Thank you for your interest in VoxDesk. Your demo has been confirmed and we are excited to show you exactly how our AI receptionist works. This will be a live walkthrough — no slides, no fluff, just the real product in action.</p>
+    <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.8;">Your VoxDesk demo is confirmed. Suhaib will walk you through the system live — you will actually hear the AI answering a real call and booking an appointment in real time. No slides, no fluff, just the product.</p>
   </td></tr>
 
   <!-- DETAILS BOX -->
@@ -581,14 +631,25 @@ def book_demo(demo: Demo):
         <p style="margin:0;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1.5px;">Demo Details</p>
       </td></tr>
       <tr><td style="padding:16px 22px;border-bottom:1px solid #e5e7eb;">
-        <p style="margin:0;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;">Date</p>
+        <p style="margin:0;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;">&#128197; Date</p>
         <p style="margin:5px 0 0;font-size:15px;font-weight:600;color:#111827;">{demo.date}</p>
       </td></tr>
-      <tr><td style="padding:16px 22px;">
-        <p style="margin:0;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;">Time</p>
+      <tr><td style="padding:16px 22px;border-bottom:1px solid #e5e7eb;">
+        <p style="margin:0;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;">&#128336; Time</p>
         <p style="margin:5px 0 0;font-size:15px;font-weight:600;color:#111827;">{demo.time}</p>
       </td></tr>
+      <tr><td style="padding:16px 22px;">
+        <p style="margin:0;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;">&#127909; Platform</p>
+        <p style="margin:5px 0 0;font-size:15px;font-weight:600;color:#111827;">Google Meet — no download needed</p>
+      </td></tr>
     </table>
+  </td></tr>
+
+  <!-- GOOGLE MEET BUTTON -->
+  <tr><td style="padding:32px 48px 0;text-align:center;">
+    <p style="margin:0 0 16px;font-size:14px;font-weight:600;color:#111827;">Your meeting link is ready. Click below to join at the scheduled time:</p>
+    <a href="{GOOGLE_MEET_LINK}" style="display:inline-block;background:#1a73e8;color:#ffffff;font-size:15px;font-weight:700;padding:16px 40px;border-radius:8px;text-decoration:none;letter-spacing:0.3px;">&#127909;&nbsp; Join Google Meet</a>
+    <p style="margin:14px 0 0;font-size:12px;color:#9ca3af;">Or copy this link: <span style="color:#1a73e8;">{GOOGLE_MEET_LINK}</span></p>
   </td></tr>
 
   <!-- WHAT TO EXPECT -->
@@ -597,38 +658,38 @@ def book_demo(demo: Demo):
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr>
         <td width="24" valign="top"><p style="margin:0;font-size:13px;color:#3b82f6;">&#8594;</p></td>
-        <td><p style="margin:0 0 10px;font-size:13px;color:#6b7280;line-height:1.7;">A live demo of VoxDesk answering a real inbound call and booking an appointment automatically</p></td>
+        <td><p style="margin:0 0 10px;font-size:13px;color:#6b7280;line-height:1.7;">Live demo of VoxDesk answering a real inbound call and booking an appointment automatically</p></td>
       </tr>
       <tr>
         <td width="24" valign="top"><p style="margin:0;font-size:13px;color:#3b82f6;">&#8594;</p></td>
-        <td><p style="margin:0 0 10px;font-size:13px;color:#6b7280;line-height:1.7;">How the AI handles cancellations, reschedules, and questions without any human involvement</p></td>
+        <td><p style="margin:0 0 10px;font-size:13px;color:#6b7280;line-height:1.7;">How the AI handles after hours calls, cancellations, and questions without any human</p></td>
       </tr>
       <tr>
         <td width="24" valign="top"><p style="margin:0;font-size:13px;color:#3b82f6;">&#8594;</p></td>
-        <td><p style="margin:0 0 10px;font-size:13px;color:#6b7280;line-height:1.7;">Your client dashboard — where you see all appointments, analytics, and manage everything</p></td>
+        <td><p style="margin:0 0 10px;font-size:13px;color:#6b7280;line-height:1.7;">Your client dashboard — appointments, analytics, and full control in one place</p></td>
       </tr>
       <tr>
         <td width="24" valign="top"><p style="margin:0;font-size:13px;color:#3b82f6;">&#8594;</p></td>
-        <td><p style="margin:0;font-size:13px;color:#6b7280;line-height:1.7;">Pricing, setup time, and how quickly your business can go live</p></td>
+        <td><p style="margin:0;font-size:13px;color:#6b7280;line-height:1.7;">Pricing, setup time, and how fast your business goes live</p></td>
       </tr>
     </table>
   </td></tr>
 
-  <!-- PREPARE -->
+  <!-- REMINDER BOX -->
   <tr><td style="padding:28px 48px 0;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:20px 22px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:20px 22px;">
       <tr><td>
-        <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#1e40af;">&#128161;&nbsp; Before the Demo</p>
-        <p style="margin:0;font-size:13px;color:#1d4ed8;line-height:1.7;">We will send you the meeting link 30 minutes before the session. No software download is needed — the demo runs entirely in your browser. Feel free to prepare any questions you have about your business or use case.</p>
+        <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#92400e;">&#128276;&nbsp; Quick Reminder</p>
+        <p style="margin:0;font-size:13px;color:#78350f;line-height:1.7;">Add this to your calendar so you do not miss it. The Google Meet link above works directly in your browser — no app needed. If you need to reschedule just reply to this email.</p>
       </td></tr>
     </table>
   </td></tr>
 
   <!-- CLOSING -->
   <tr><td style="padding:28px 48px 36px;">
-    <p style="margin:0 0 16px;font-size:14px;color:#6b7280;line-height:1.8;">If something comes up and you need to reschedule, simply reply to this email and we will find a new time that works for you. We look forward to speaking with you!</p>
-    <p style="margin:0;font-size:14px;color:#374151;font-weight:600;">See you soon,</p>
-    <p style="margin:4px 0 0;font-size:14px;color:#374151;">The VoxDesk Team</p>
+    <p style="margin:0 0 16px;font-size:14px;color:#6b7280;line-height:1.8;">Looking forward to showing you what VoxDesk can do for your business. See you at the demo!</p>
+    <p style="margin:0;font-size:14px;color:#374151;font-weight:600;">Suhaib</p>
+    <p style="margin:4px 0 0;font-size:13px;color:#9ca3af;">Founder, VoxDesk</p>
   </td></tr>
 
   <!-- DIVIDER -->
@@ -636,7 +697,7 @@ def book_demo(demo: Demo):
 
   <!-- FOOTER -->
   <tr><td style="padding:24px 48px;text-align:center;">
-    <p style="margin:0;font-size:12px;color:#9ca3af;">This confirmation was sent automatically by <strong>VoxDesk AI Receptionist</strong>.</p>
+    <p style="margin:0;font-size:12px;color:#9ca3af;">This confirmation was sent automatically by <strong>VoxDesk AI</strong>. Harvey booked this for you.</p>
     <p style="margin:6px 0 0;font-size:11px;color:#d1d5db;">&#127760;&nbsp; voxdesk.com &nbsp;|&nbsp; Powered by VoxDesk &copy; 2026</p>
   </td></tr>
 
