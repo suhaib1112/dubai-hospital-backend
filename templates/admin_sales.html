@@ -170,6 +170,48 @@
   /* MOBILE OVERLAY */
   .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99;}
 
+
+  /* QUICK STATS BAR */
+  .quick-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;padding:16px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;}
+  .qs-item{text-align:center;}
+  .qs-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px;}
+  .qs-value{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--accent);}
+  .qs-sub{font-size:10px;color:var(--ink3);margin-top:2px;}
+
+  /* DEMO PREP CARD */
+  .prep-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;position:relative;}
+  .prep-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .prep-card-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;}
+  .prep-card-sub{font-size:12px;color:var(--ink3);margin-top:2px;}
+  .prep-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .prep-field{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+  .prep-field-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:5px;}
+  .prep-field-value{font-size:13px;color:var(--ink);font-weight:500;line-height:1.5;}
+  .prep-talking-points{background:var(--accent-glow);border:1px solid rgba(249,115,22,0.25);border-radius:8px;padding:14px 16px;margin-bottom:14px;}
+  .prep-talking-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+  .prep-talking-point{font-size:13px;color:var(--ink);padding:5px 0;border-bottom:1px solid rgba(249,115,22,0.1);display:flex;gap:8px;align-items:flex-start;}
+  .prep-talking-point:last-child{border-bottom:none;}
+  .prep-roi-box{background:var(--green-bg);border:1px solid var(--green);border-radius:8px;padding:12px 16px;text-align:center;}
+  .prep-roi-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--green);margin-bottom:4px;}
+  .prep-roi-value{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--green);}
+  .prep-select{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+  .prep-demo-btn{padding:8px 14px;border-radius:8px;border:1.5px solid var(--border);cursor:pointer;font-size:12px;font-weight:600;background:none;color:var(--ink2);transition:all 0.15s;text-align:left;}
+  .prep-demo-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .prep-demo-btn.active{border-color:var(--accent);background:var(--accent-glow);color:var(--accent);}
+  .prep-empty{text-align:center;padding:40px;color:var(--ink3);font-family:'IBM Plex Mono',monospace;font-size:12px;}
+
+  /* FOLLOW UP */
+  .followup-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;white-space:nowrap;}
+  .followup-due{background:var(--red-bg);color:var(--red);}
+  .followup-soon{background:var(--amber-bg);color:var(--amber);}
+  .followup-ok{background:var(--green-bg);color:var(--green);}
+
+  /* DELETE BTN */
+  .btn-delete{background:var(--red-bg);border:1px solid var(--red);color:var(--red);padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;}
+  .btn-delete:hover{opacity:0.7;}
+
+  /* DEMO NOTES */
+  .demo-notes-preview{font-size:12px;color:var(--ink3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
   ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
@@ -230,6 +272,11 @@
       Demos
       <span class="nav-count" id="nav-demo-count">—</span>
     </button>
+    <button class="nav-item" onclick="showTab('prep',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M8 1l1.8 3.6L14 5.3l-3 2.9.7 4.1L8 10.4l-3.7 1.9.7-4.1-3-2.9 4.2-.7z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/></svg>
+      Demo Prep
+      <span class="nav-count" id="nav-prep-count">—</span>
+    </button>
     <button class="nav-item" onclick="showTab('calls',this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M3 3h2l1 3-1.5 1.5a9 9 0 004 4L10 10l3 1v2a1 1 0 01-1 1A11 11 0 012 4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/></svg>
       All Calls
@@ -263,6 +310,13 @@
 
     <!-- OVERVIEW -->
     <div class="section active" id="tab-overview">
+      <!-- QUICK STATS BAR -->
+      <div class="quick-stats">
+        <div class="qs-item"><div class="qs-label">Calls Today</div><div class="qs-value" id="qs-today">—</div><div class="qs-sub">inbound</div></div>
+        <div class="qs-item"><div class="qs-label">Demos This Week</div><div class="qs-value" id="qs-week">—</div><div class="qs-sub">booked</div></div>
+        <div class="qs-item"><div class="qs-label">Follow Ups Due</div><div class="qs-value" id="qs-followups" style="color:var(--red);">—</div><div class="qs-sub">today</div></div>
+        <div class="qs-item"><div class="qs-label">Conv. Rate</div><div class="qs-value" id="qs-conv">—</div><div class="qs-sub">leads → demos</div></div>
+      </div>
       <div class="stats-row">
         <div class="stat-card"><div class="stat-label">Total Leads</div><div class="stat-value" id="stat-total">—</div><div class="stat-sub">All outbound calls</div></div>
         <div class="stat-card"><div class="stat-label">Hot Leads</div><div class="stat-value" id="stat-hot">—</div><div class="stat-sub">High interest</div></div>
@@ -321,6 +375,7 @@
         <div class="table-header">
           <div class="table-title">All Leads</div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="exportCSV('leads')">⬇ Export CSV</button>
             <div class="search-box">
               <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#9c9a94" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="#9c9a94" stroke-width="1.5" stroke-linecap="round"/></svg>
               <input type="text" placeholder="Search leads..." oninput="filterTable('leads-tbody',this.value)">
@@ -345,6 +400,7 @@
         <div class="table-header">
           <div class="table-title">Booked Demos</div>
           <div style="display:flex;align-items:center;gap:10px;">
+            <button class="btn btn-outline btn-sm" onclick="exportCSV('demos')">⬇ Export CSV</button>
             <div class="search-box">
               <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#9c9a94" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="#9c9a94" stroke-width="1.5" stroke-linecap="round"/></svg>
               <input type="text" placeholder="Search demos..." oninput="filterTable('demos-tbody',this.value)">
@@ -354,15 +410,30 @@
         </div>
         <div style="overflow-x:auto;">
           <table>
-            <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Date</th><th>Time</th><th>Booked At</th></tr></thead>
+            <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Date</th><th>Time</th><th>My Notes</th><th>Booked At</th><th>Actions</th></tr></thead>
             <tbody id="demos-tbody">
-              <tr><td colspan="6"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></td></tr>
+              <tr><td colspan="8"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
 
+
+    <!-- DEMO PREP -->
+    <div class="section" id="tab-prep">
+      <div class="prep-card">
+        <div class="prep-card-header">
+          <div>
+            <div class="prep-card-title">⚡ Demo Prep</div>
+            <div class="prep-card-sub">Select a booked demo — Harvey will have already done your homework</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="exportCSV('leads')">⬇ Export Leads</button>
+        </div>
+        <div class="prep-select" id="prep-demo-list"><div class="prep-empty">No demos booked yet</div></div>
+        <div id="prep-content"><div class="prep-empty">👆 Select a demo above to see your prep sheet</div></div>
+      </div>
+    </div>
 
     <!-- CALLS -->
     <div class="section" id="tab-calls">
@@ -391,6 +462,35 @@
   </div>
 </main>
 
+<!-- DEMO NOTES MODAL -->
+<div class="modal-overlay" id="demo-notes-modal">
+  <div class="modal">
+    <div class="modal-title" id="demo-modal-name">Demo Notes</div>
+    <div class="modal-sub" id="demo-modal-sub">Add your own notes after this demo call</div>
+    <div class="form-group">
+      <label class="form-label">Your Notes</label>
+      <textarea class="form-input" id="demo-modal-notes" placeholder="e.g. Loved the product. Needs to check budget with partner. Said follow up Friday. Very close to closing..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Follow Up Date</label>
+      <input class="form-input" id="demo-modal-followup" type="date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Outcome</label>
+      <div class="status-grid">
+        <div class="status-option" id="dopt-interested" onclick="selectDemoOutcome('interested')">✅ Interested</div>
+        <div class="status-option" id="dopt-followup" onclick="selectDemoOutcome('followup')">📞 Follow Up</div>
+        <div class="status-option" id="dopt-closed" onclick="selectDemoOutcome('closed')" style="grid-column:span 2;">🎉 Closed — They Said Yes!</div>
+      </div>
+    </div>
+    <input type="hidden" id="demo-modal-id">
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeDemoModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveDemoNotes()">💾 Save Notes</button>
+    </div>
+  </div>
+</div>
+
 <!-- NOTES MODAL -->
 <div class="modal-overlay" id="notes-modal">
   <div class="modal">
@@ -415,6 +515,11 @@
     <div class="form-group">
       <label class="form-label">Pain Points</label>
       <input class="form-input" id="modal-pain" type="text" placeholder="e.g. Loses 5+ calls daily, no after-hours coverage">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Follow Up Date</label>
+      <input class="form-input" id="modal-followup" type="date">
     </div>
 
     <input type="hidden" id="modal-lead-id">
@@ -457,7 +562,7 @@
   }, 1000);
 
   // ===== TABS =====
-  const tabTitles = { overview:'Outbound Overview', pipeline:'Sales Pipeline', leads:'All Leads', demos:'Booked Demos', calls:'All Calls' };
+  const tabTitles = { overview:'Outbound Overview', pipeline:'Sales Pipeline', leads:'All Leads', demos:'Booked Demos', prep:'Demo Prep', calls:'All Calls' };
   function showTab(tab, btn) {
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -630,11 +735,6 @@
   }
 
   // ===== RENDER LEADS =====
-  function moodEmoji(m) {
-    const map = { excited:'🤩', curious:'🤔', skeptical:'😒', confused:'😕', neutral:'😐' };
-    return map[(m||'').toLowerCase()] || '';
-  }
-
   function renderLeads() {
     const tbody = document.getElementById('leads-tbody');
     if (!leadsData.length) {
@@ -696,20 +796,10 @@
       document.getElementById('stat-conv').textContent = conv;
 
       const tbody = document.getElementById('demos-tbody');
-      if (!demosData.length) {
-        tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No demos booked yet</div></div></td></tr>`;
-      } else {
-        tbody.innerHTML = demosData.map(r => `
-          <tr>
-            <td class="td-mono">${r[0]}</td>
-            <td class="td-primary">${r[1]}</td>
-            <td>${r[2]}</td>
-            <td class="td-mono">${r[3]}</td>
-            <td class="td-mono">${r[4]}</td>
-            <td class="td-mono">${r[5] ? new Date(r[5]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}</td>
-          </tr>`).join('');
-      }
+      renderDemos();
       buildCharts();
+      buildPrepTab();
+      updateQuickStats();
     } catch(e) {
       document.getElementById('demos-tbody').innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load</div></div></td></tr>`;
     }
@@ -729,7 +819,7 @@
     try {
       const res = await fetch('/admin-calls');
       const data = await res.json();
-      const callsData = data.calls || [];
+      const callsData = data.calls || []; window._callsData = callsData;
       document.getElementById('nav-calls-count').textContent = callsData.length;
       document.getElementById('calls-count-label').textContent = callsData.length + ' records';
       const tbody = document.getElementById('calls-tbody');
@@ -748,6 +838,366 @@
     } catch(e) {
       document.getElementById('calls-tbody').innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load</div></div></td></tr>`;
     }
+  }
+
+
+  // ===== EXPORT CSV =====
+  function exportCSV(type) {
+    let rows, headers, filename;
+    if (type === 'leads') {
+      headers = ['ID','Business','Owner','Phone','Status','Mood','Pain Points','ROI Reaction','Objection','Notes','Date'];
+      rows = leadsData.map(r => {
+        const saved = getLocalNotes(r.id);
+        return [r.id, r.business_name, r.owner_name, r.phone, saved.status||r.interest_level||'', r.mood||'', r.pain_points||'', r.roi_reaction||'', r.objection||'', saved.notes||r.notes||'', r.created_at ? new Date(r.created_at).toLocaleDateString() : ''];
+      });
+      filename = 'voxdesk-leads.csv';
+    } else {
+      headers = ['ID','Name','Email','Date','Time','Notes','Follow Up','Outcome'];
+      rows = demosData.map(r => {
+        const saved = getDemoNotes(r[0]);
+        return [r[0], r[1], r[2], r[3], r[4], saved.notes||'', saved.followup||'', saved.outcome||''];
+      });
+      filename = 'voxdesk-demos.csv';
+    }
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = filename;
+    a.click();
+    showToast('CSV exported!');
+  }
+
+  // ===== DEMO NOTES STORAGE =====
+  function getDemoNotes(demoId) {
+    try { return JSON.parse(localStorage.getItem('vd-demo-'+demoId) || '{}'); } catch { return {}; }
+  }
+  function saveDemoNotesLocal(demoId, data) {
+    localStorage.setItem('vd-demo-'+demoId, JSON.stringify(data));
+  }
+
+  // ===== DEMO NOTES MODAL =====
+  let currentDemoId = null;
+  let selectedDemoOutcome = '';
+
+  function openDemoNotes(demoId, name, date) {
+    currentDemoId = demoId;
+    const saved = getDemoNotes(demoId);
+    document.getElementById('demo-modal-id').value = demoId;
+    document.getElementById('demo-modal-name').textContent = name;
+    document.getElementById('demo-modal-sub').textContent = date + ' · Add your notes after the call';
+    document.getElementById('demo-modal-notes').value = saved.notes || '';
+    document.getElementById('demo-modal-followup').value = saved.followup || '';
+    selectDemoOutcome(saved.outcome || '');
+    document.getElementById('demo-notes-modal').classList.add('show');
+  }
+
+  function selectDemoOutcome(o) {
+    selectedDemoOutcome = o;
+    ['interested','followup','closed'].forEach(opt => {
+      const el = document.getElementById('dopt-'+opt);
+      if (!el) return;
+      el.className = 'status-option';
+      if (opt === o) {
+        if (o === 'closed') el.classList.add('selected-demo');
+        else if (o === 'interested') el.classList.add('selected-hot');
+        else el.classList.add('selected-warm');
+      }
+    });
+  }
+
+  function closeDemoModal() {
+    document.getElementById('demo-notes-modal').classList.remove('show');
+    currentDemoId = null;
+  }
+
+  document.getElementById('demo-notes-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('demo-notes-modal')) closeDemoModal();
+  });
+
+  function saveDemoNotes() {
+    if (!currentDemoId) return;
+    const data = {
+      notes: document.getElementById('demo-modal-notes').value,
+      followup: document.getElementById('demo-modal-followup').value,
+      outcome: selectedDemoOutcome
+    };
+    saveDemoNotesLocal(currentDemoId, data);
+    closeDemoModal();
+    showToast('Demo notes saved!');
+    renderDemos();
+    buildPrepTab();
+    updateQuickStats();
+  }
+
+  // ===== DELETE =====
+  function deleteLead(id) {
+    if (!confirm('Mark this lead as junk and hide it?')) return;
+    const junk = JSON.parse(localStorage.getItem('vd-junk') || '[]');
+    junk.push(id);
+    localStorage.setItem('vd-junk', JSON.stringify(junk));
+    leadsData = leadsData.filter(r => r.id !== id);
+    renderLeads();
+    buildPipeline();
+    updateQuickStats();
+    showToast('Lead removed');
+  }
+
+  function deleteDemo(id) {
+    if (!confirm('Remove this demo?')) return;
+    const junk = JSON.parse(localStorage.getItem('vd-demo-junk') || '[]');
+    junk.push(id);
+    localStorage.setItem('vd-demo-junk', JSON.stringify(junk));
+    demosData = demosData.filter(r => r[0] !== id);
+    renderDemos();
+    buildPrepTab();
+    updateQuickStats();
+    showToast('Demo removed');
+  }
+
+  // ===== FOLLOW UP BADGE =====
+  function followUpBadge(dateStr) {
+    if (!dateStr) return '';
+    const due = new Date(dateStr);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const diff = Math.round((due - today) / 86400000);
+    if (diff < 0) return `<span class="followup-badge followup-due">⚠ Overdue</span>`;
+    if (diff === 0) return `<span class="followup-badge followup-due">🔔 Today</span>`;
+    if (diff <= 3) return `<span class="followup-badge followup-soon">📅 ${diff}d</span>`;
+    return `<span class="followup-badge followup-ok">📅 ${diff}d</span>`;
+  }
+
+  // ===== RENDER DEMOS (upgraded) =====
+  function renderDemos() {
+    const tbody = document.getElementById('demos-tbody');
+    const junk = JSON.parse(localStorage.getItem('vd-demo-junk') || '[]');
+    const visible = demosData.filter(r => !junk.includes(r[0]));
+    if (!visible.length) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No demos booked yet</div></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = visible.map(r => {
+      const saved = getDemoNotes(r[0]);
+      const notesPreview = saved.notes ? saved.notes.slice(0,40)+(saved.notes.length>40?'...':'') : '—';
+      return `<tr>
+        <td class="td-mono">${r[0]}</td>
+        <td class="td-primary">${r[1]}</td>
+        <td>${r[2]}</td>
+        <td class="td-mono">${r[3]}</td>
+        <td class="td-mono">${r[4]}</td>
+        <td class="demo-notes-preview" title="${saved.notes||''}">${notesPreview} ${followUpBadge(saved.followup)}</td>
+        <td class="td-mono">${r[5] ? new Date(r[5]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}</td>
+        <td style="display:flex;gap:6px;">
+          <button class="btn-notes" onclick="openDemoNotes('${r[0]}','${r[1]}','${r[3]}')">📝 Notes</button>
+          <button class="btn-delete" onclick="deleteDemo('${r[0]}')">🗑</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ===== DEMO PREP TAB =====
+  function buildPrepTab() {
+    const junk = JSON.parse(localStorage.getItem('vd-demo-junk') || '[]');
+    const upcomingDemos = demosData.filter(r => !junk.includes(r[0]));
+    const listEl = document.getElementById('prep-demo-list');
+    document.getElementById('nav-prep-count').textContent = upcomingDemos.length;
+
+    if (!upcomingDemos.length) {
+      listEl.innerHTML = '<div class="prep-empty">No demos booked yet</div>';
+      document.getElementById('prep-content').innerHTML = '<div class="prep-empty">No demos to prep for</div>';
+      return;
+    }
+
+    listEl.innerHTML = upcomingDemos.map((r,i) => `
+      <button class="prep-demo-btn ${i===0?'active':''}" onclick="showPrepFor('${r[0]}', this)">${r[1]} · ${r[3]}</button>
+    `).join('');
+
+    showPrepFor(upcomingDemos[0][0], listEl.querySelector('.prep-demo-btn'));
+  }
+
+  function showPrepFor(demoId, btn) {
+    document.querySelectorAll('.prep-demo-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    const demo = demosData.find(r => r[0] === demoId);
+    if (!demo) return;
+
+    // Find matching lead by name
+    const matchLead = leadsData.find(l =>
+      l.owner_name.toLowerCase().includes(demo[1].toLowerCase()) ||
+      demo[1].toLowerCase().includes(l.owner_name.toLowerCase())
+    );
+
+    const demoNotes = getDemoNotes(demoId);
+
+    // Generate talking points based on Harvey's intelligence
+    const talkingPoints = [];
+    if (matchLead) {
+      if (matchLead.pain_points && matchLead.pain_points !== 'Did not share') {
+        talkingPoints.push('Open with their pain: "' + matchLead.pain_points.slice(0,60) + '"');
+      }
+      if (matchLead.objection && matchLead.objection !== 'none') {
+        talkingPoints.push('Expect objection: ' + matchLead.objection + ' — have your answer ready');
+      }
+      if (matchLead.roi_reaction === 'shocked' || matchLead.roi_reaction === 'loved it') {
+        talkingPoints.push('They reacted well to the ROI math — lead with numbers again');
+      }
+      if (matchLead.mood === 'skeptical') {
+        talkingPoints.push('They were skeptical on the call — let the live demo do the talking, don't over-pitch');
+      }
+      if (matchLead.mood === 'excited') {
+        talkingPoints.push('They were excited — move fast to close, don't lose momentum');
+      }
+      if (matchLead.notes) {
+        talkingPoints.push('Harvey's note: ' + matchLead.notes.slice(0,80));
+      }
+    }
+    if (!talkingPoints.length) talkingPoints.push('No lead intelligence found — introduce yourself and qualify on the call');
+
+    const prepHTML = `
+      <div class="prep-grid">
+        <div class="prep-field">
+          <div class="prep-field-label">👤 Name</div>
+          <div class="prep-field-value">${demo[1]}</div>
+        </div>
+        <div class="prep-field">
+          <div class="prep-field-label">📧 Email</div>
+          <div class="prep-field-value">${demo[2]}</div>
+        </div>
+        <div class="prep-field">
+          <div class="prep-field-label">📅 Demo Date & Time</div>
+          <div class="prep-field-value">${demo[3]} at ${demo[4]}</div>
+        </div>
+        <div class="prep-field">
+          <div class="prep-field-label">🎯 Interest Level</div>
+          <div class="prep-field-value">${matchLead ? interestBadge(matchLead.interest_level) : '—'}</div>
+        </div>
+        <div class="prep-field">
+          <div class="prep-field-label">😊 Mood on Call</div>
+          <div class="prep-field-value">${matchLead ? (moodEmoji(matchLead.mood) + ' ' + (matchLead.mood||'—')) : '—'}</div>
+        </div>
+        <div class="prep-field">
+          <div class="prep-field-label">💬 Main Objection</div>
+          <div class="prep-field-value">${matchLead ? (matchLead.objection||'None') : '—'}</div>
+        </div>
+      </div>
+      ${matchLead && matchLead.pain_points ? `
+      <div class="prep-field" style="margin-bottom:12px;">
+        <div class="prep-field-label">🔥 Their Pain Point</div>
+        <div class="prep-field-value">${matchLead.pain_points}</div>
+      </div>` : ''}
+      <div class="prep-talking-points">
+        <div class="prep-talking-label">⚡ Harvey's Talking Points for You</div>
+        ${talkingPoints.map(p => `<div class="prep-talking-point"><span>→</span><span>${p}</span></div>`).join('')}
+      </div>
+      ${demoNotes.notes ? `
+      <div class="prep-field" style="margin-bottom:12px;">
+        <div class="prep-field-label">📝 Your Post-Demo Notes</div>
+        <div class="prep-field-value">${demoNotes.notes}</div>
+      </div>` : ''}
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn btn-primary" onclick="openDemoNotes('${demoId}','${demo[1]}','${demo[3]}')">📝 Add/Edit Notes</button>
+        <button class="btn btn-outline" onclick="deleteDemo('${demoId}')">🗑 Remove Demo</button>
+      </div>
+    `;
+
+    document.getElementById('prep-content').innerHTML = prepHTML;
+  }
+
+  // ===== QUICK STATS =====
+  function updateQuickStats() {
+    const today = new Date().toDateString();
+    const thisWeekStart = new Date(); thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay());
+
+    // Calls today - from callsData if available
+    document.getElementById('qs-today').textContent = window._callsData ? window._callsData.filter(c => c.created_at && new Date(c.created_at).toDateString() === today).length : '—';
+
+    // Demos this week
+    const demosThisWeek = demosData.filter(r => {
+      if (!r[5]) return false;
+      return new Date(r[5]) >= thisWeekStart;
+    }).length;
+    document.getElementById('qs-week').textContent = demosThisWeek;
+
+    // Follow ups due today
+    let dueCnt = 0;
+    demosData.forEach(r => {
+      const saved = getDemoNotes(r[0]);
+      if (saved.followup) {
+        const diff = Math.round((new Date(saved.followup) - new Date().setHours(0,0,0,0)) / 86400000);
+        if (diff <= 0) dueCnt++;
+      }
+    });
+    document.getElementById('qs-followups').textContent = dueCnt;
+
+    // Conv rate
+    const conv = leadsData.length > 0 ? Math.round((demosData.length/leadsData.length)*100)+'%' : '—';
+    document.getElementById('qs-conv').textContent = conv;
+    document.getElementById('stat-conv').textContent = conv;
+  }
+
+  // ===== UPDATED RENDER LEADS (with delete) =====
+  function renderLeads() {
+    const tbody = document.getElementById('leads-tbody');
+    const junk = JSON.parse(localStorage.getItem('vd-junk') || '[]');
+    const visible = leadsData.filter(r => !junk.includes(r.id));
+    if (!visible.length) {
+      tbody.innerHTML = `<tr><td colspan="9"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No leads yet</div></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = visible.map(r => {
+      const saved = getLocalNotes(r.id);
+      const status = saved.status || r.interest_level || '';
+      const mood = r.mood || '';
+      const pain = r.pain_points ? r.pain_points.slice(0,40)+(r.pain_points.length>40?'...':'') : '—';
+      const notesPreview = (saved.notes || r.notes) ? (saved.notes||r.notes).slice(0,40)+((saved.notes||r.notes).length>40?'...':'') : '—';
+      const fuDate = saved.followup;
+      return `<tr>
+        <td class="td-mono">${r.id}</td>
+        <td class="td-primary">${r.business_name}</td>
+        <td>${r.owner_name}</td>
+        <td class="td-mono">${r.phone}</td>
+        <td>${interestBadge(status)}</td>
+        <td style="font-size:13px;">${moodEmoji(mood)} ${mood||'—'}</td>
+        <td class="td-notes" title="${r.pain_points||''}">${pain}</td>
+        <td class="td-notes" title="${saved.notes||r.notes||''}">${notesPreview} ${followUpBadge(fuDate)}</td>
+        <td style="display:flex;gap:6px;">
+          <button class="btn-notes" onclick="openNotes('${r.id}','${r.business_name}','${r.phone}')">✏️ Notes</button>
+          <button class="btn-delete" onclick="deleteLead('${r.id}')">🗑</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ===== UPDATED OPEN NOTES (add follow up field) =====
+  function openNotes(leadId, bizName, phone) {
+    currentLeadId = leadId;
+    const saved = getLocalNotes(leadId);
+    document.getElementById('modal-lead-id').value = leadId;
+    document.getElementById('modal-biz-name').textContent = bizName;
+    document.getElementById('modal-biz-sub').textContent = phone + ' · Update status and demo prep notes';
+    document.getElementById('modal-notes').value = saved.notes || '';
+    document.getElementById('modal-pain').value = saved.pain || '';
+    if (document.getElementById('modal-followup')) {
+      document.getElementById('modal-followup').value = saved.followup || '';
+    }
+    selectStatus(saved.status || '');
+    document.getElementById('notes-modal').classList.add('show');
+  }
+
+  function saveNotes() {
+    if (!currentLeadId) return;
+    const data = {
+      status: selectedStatus,
+      notes: document.getElementById('modal-notes').value,
+      pain: document.getElementById('modal-pain').value,
+      followup: document.getElementById('modal-followup') ? document.getElementById('modal-followup').value : '',
+    };
+    saveLocalNotes(currentLeadId, data);
+    closeModal();
+    showToast('Notes saved!');
+    renderLeads();
+    buildPipeline();
+    updateQuickStats();
   }
 
   loadLeads().then(loadDemos).then(loadCalls);
