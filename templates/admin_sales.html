@@ -230,6 +230,11 @@
       Demos
       <span class="nav-count" id="nav-demo-count">—</span>
     </button>
+    <button class="nav-item" onclick="showTab('calls',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M3 3h2l1 3-1.5 1.5a9 9 0 004 4L10 10l3 1v2a1 1 0 01-1 1A11 11 0 012 4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/></svg>
+      All Calls
+      <span class="nav-count" id="nav-calls-count">—</span>
+    </button>
   </nav>
   <div class="sidebar-footer">
     <div class="sidebar-clock" id="sidebar-clock">—</div>
@@ -358,6 +363,31 @@
       </div>
     </div>
 
+
+    <!-- CALLS -->
+    <div class="section" id="tab-calls">
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">All Calls — Every Inbound Call Logged</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="search-box">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#9c9a94" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="#9c9a94" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Search calls..." oninput="filterTable('calls-tbody',this.value)">
+            </div>
+            <div class="section-meta" id="calls-count-label">— records</div>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>ID</th><th>Phone</th><th>Duration</th><th>Outcome</th><th>Summary</th><th>Date</th></tr></thead>
+            <tbody id="calls-tbody">
+              <tr><td colspan="6"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Loading...</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div>
 </main>
 
@@ -427,7 +457,7 @@
   }, 1000);
 
   // ===== TABS =====
-  const tabTitles = { overview:'Outbound Overview', pipeline:'Sales Pipeline', leads:'All Leads', demos:'Booked Demos' };
+  const tabTitles = { overview:'Outbound Overview', pipeline:'Sales Pipeline', leads:'All Leads', demos:'Booked Demos', calls:'All Calls' };
   function showTab(tab, btn) {
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -685,7 +715,42 @@
     }
   }
 
-  loadLeads().then(loadDemos);
+  // outcome badge
+  function outcomeBadge(o) {
+    o = (o||'').toLowerCase();
+    if (o.includes('booked')) return `<span class="badge badge-demo">✅ Demo Booked</span>`;
+    if (o.includes('lead') || o.includes('saved')) return `<span class="badge badge-warm">🔥 Lead Saved</span>`;
+    if (o.includes('hung') || o.includes('hang')) return `<span class="badge badge-cold">📵 Hung Up</span>`;
+    if (o.includes('answered')) return `<span class="badge" style="background:var(--accent-glow);color:var(--accent);">📞 Answered</span>`;
+    return `<span class="badge">${o||'—'}</span>`;
+  }
+
+  async function loadCalls() {
+    try {
+      const res = await fetch('/admin-calls');
+      const data = await res.json();
+      const callsData = data.calls || [];
+      document.getElementById('nav-calls-count').textContent = callsData.length;
+      document.getElementById('calls-count-label').textContent = callsData.length + ' records';
+      const tbody = document.getElementById('calls-tbody');
+      if (!callsData.length) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No calls logged yet</div></div></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = callsData.map(r => `<tr>
+        <td class="td-mono">${r.id}</td>
+        <td class="td-mono">${r.caller_phone||'—'}</td>
+        <td class="td-mono">${r.call_duration||'—'}</td>
+        <td>${outcomeBadge(r.call_outcome)}</td>
+        <td class="td-notes" title="${r.summary||''}" style="max-width:260px;">${r.summary ? r.summary.slice(0,60)+(r.summary.length>60?'...':'') : '—'}</td>
+        <td class="td-mono">${r.created_at ? new Date(r.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}</td>
+      </tr>`).join('');
+    } catch(e) {
+      document.getElementById('calls-tbody').innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Failed to load</div></div></td></tr>`;
+    }
+  }
+
+  loadLeads().then(loadDemos).then(loadCalls);
 </script>
 </body>
 </html>

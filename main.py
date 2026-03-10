@@ -116,6 +116,17 @@ def create_tables():
             );
             """)
 
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS call_logs (
+                call_id VARCHAR(20) PRIMARY KEY,
+                caller_phone VARCHAR(30),
+                call_duration VARCHAR(20),
+                call_outcome VARCHAR(100),
+                summary TEXT,
+                created_at TIMESTAMP
+            );
+            """)
+
             conn.commit()
             logger.info("Tables created / verified successfully")
 
@@ -192,15 +203,22 @@ class RescheduleRequest(BaseModel):
 
 
 class Lead(BaseModel):
-    business_name: str
-    owner_name: str
-    phone: str
-    interest_level: str       # cold / warm / hot / demo
-    mood: str = ""            # excited / curious / skeptical / confused
-    pain_points: str = ""     # what they said is frustrating them
-    roi_reaction: str = ""    # shocked / loved it / didn't believe it / neutral
-    objection: str = ""       # price / has receptionist / not interested / none
-    notes: str = ""           # any extra notes from Alex
+    business_name: str = "Unknown"
+    owner_name: str = "Unknown"
+    phone: str = "Unknown"
+    interest_level: str = "cold"
+    mood: str = ""
+    pain_points: str = ""
+    roi_reaction: str = ""
+    objection: str = ""
+    notes: str = ""
+
+
+class CallLog(BaseModel):
+    caller_phone: str = "Unknown"
+    call_duration: str = ""
+    call_outcome: str = ""
+    summary: str = ""
 
 
 class Demo(BaseModel):
@@ -740,3 +758,55 @@ def admin_demos(username: str = Depends(verify_admin)):
     except Exception as e:
         logger.error(f"Error loading demos: {e}")
         return {"demos": []}
+
+# -----------------------------
+# LOG CALL (every single call)
+# -----------------------------
+
+@app.post("/log-call")
+def log_call(log: CallLog):
+    try:
+        with get_db() as (conn, cur):
+            call_id = "CL" + str(uuid.uuid4())[:6].upper()
+            cur.execute("""
+                INSERT INTO call_logs VALUES (%s,%s,%s,%s,%s,%s)
+            """, (
+                call_id,
+                log.caller_phone,
+                log.call_duration,
+                log.call_outcome,
+                log.summary,
+                datetime.utcnow()
+            ))
+            conn.commit()
+            logger.info(f"Call logged: {call_id} | {log.caller_phone} | {log.call_outcome}")
+        return {"success": True, "message": "Call logged"}
+    except Exception as e:
+        logger.error(f"Error logging call: {e}")
+        return {"success": False, "message": "Something went wrong"}
+
+
+# -----------------------------
+# ADMIN CALL LOGS
+# -----------------------------
+
+@app.get("/admin-calls")
+def admin_calls(username: str = Depends(verify_admin)):
+    try:
+        with get_db() as (conn, cur):
+            cur.execute("SELECT * FROM call_logs ORDER BY created_at DESC")
+            rows = cur.fetchall()
+        return {"calls": [
+            {
+                "id": r[0],
+                "caller_phone": r[1],
+                "call_duration": r[2],
+                "call_outcome": r[3],
+                "summary": r[4],
+                "created_at": r[5].isoformat() if r[5] else None
+            }
+            for r in rows
+        ]}
+    except Exception as e:
+        logger.error(f"Error loading call logs: {e}")
+        return {"calls": []}
