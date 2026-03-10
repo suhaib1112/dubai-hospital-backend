@@ -1002,13 +1002,13 @@
         talkingPoints.push('They reacted well to the ROI math — lead with numbers again');
       }
       if (matchLead.mood === 'skeptical') {
-        talkingPoints.push('They were skeptical on the call — let the live demo do the talking, don't over-pitch');
+        talkingPoints.push('They were skeptical on the call — let the live demo do the talking, don\'t over-pitch');
       }
       if (matchLead.mood === 'excited') {
-        talkingPoints.push('They were excited — move fast to close, don't lose momentum');
+        talkingPoints.push('They were excited — move fast to close, don\'t lose momentum');
       }
       if (matchLead.notes) {
-        talkingPoints.push('Harvey's note: ' + matchLead.notes.slice(0,80));
+        talkingPoints.push('Harvey\'s note: ' + matchLead.notes.slice(0,80));
       }
     }
     if (!talkingPoints.length) talkingPoints.push('No lead intelligence found — introduce yourself and qualify on the call');
@@ -1046,7 +1046,7 @@
         <div class="prep-field-value">${matchLead.pain_points}</div>
       </div>` : ''}
       <div class="prep-talking-points">
-        <div class="prep-talking-label">⚡ Harvey's Talking Points for You</div>
+        <div class="prep-talking-label">⚡ Harvey\'s Talking Points for You</div>
         ${talkingPoints.map(p => `<div class="prep-talking-point"><span>→</span><span>${p}</span></div>`).join('')}
       </div>
       ${demoNotes.notes ? `
