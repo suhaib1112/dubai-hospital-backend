@@ -33,7 +33,7 @@ logger = logging.getLogger("voxdesk")
 # APP INITIALIZATION
 # -----------------------------
 
-app = FastAPI(docs_url=None, redoc_url=None)  # Swagger hidden in production
+app = FastAPI()  # Swagger hidden in production
 templates = Jinja2Templates(directory="templates")
 security = HTTPBasic()
 
